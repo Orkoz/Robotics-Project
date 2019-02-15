@@ -11,7 +11,7 @@ Closeness0 = 10  # cm
 Closeness45 = 7  # cm
 commands_in_a_row = 10
 Kp = 1.0  # speed propotional gain
-ds = 0.1
+ds = 10
 dt = 0.01
 k = 0.5  # control gain
 
@@ -245,10 +245,10 @@ def pass_obstacle():
 def map_robot_wheels_commends_to_yaw():
     yaw_map = np.array([0, 0, 0, 0])
     for i in range(300, 1000, 10):
-        for j in range(300, 1000, 10):
+        for j in range(-300, -1000, -10):
             robot.drive(int(i), int(j))
-            robot.update_params()
             sleep(1)
+            robot.update_params()
             yaw_map = np.vstack((yaw_map, np.array([i, j, robot.Dx, robot.Dy])))
     return yaw_map
 
@@ -256,19 +256,21 @@ def map_robot_wheels_commends_to_yaw():
 
 def main():
     yaw_map = map_robot_wheels_commends_to_yaw()
-    xi = robot.x
-    yi = robot.y
+    np.savetxt("yaw_map.csv", yaw_map, delimiter=",")
 
-    x = [xi] + [0.0, 100.0, 100.0, 50.0, 60.0]
-    y = [yi] + [0.0, 0.0, -30.0, -20.0, 0.0]
-
-    X, Y, yaw, ck, s = create_motion_profile(x, y)
-    plot_motion_profile(x, y, X, Y, yaw, s)
-    v = create_target_velocity_profile(ck, s)
+    # x = [0.0, 25.0,  50.0,   25.0,   0.0]
+    # y = [0.0, 25.0,   0.0,  -25.0,   0.0]
+    #
+    # X, Y, yaw, ck, s = create_motion_profile(x, y)
+    # plot_motion_profile(x, y, X, Y, yaw, s)
+    # a = create_target_velocity_profile(ck, s)
+    # v = a * dt
     # left, right = convert_angle_and_velocity_to_wheels_commends(yaw, a)
-    profile.update_profile(X, Y, yaw, v)
-
-    preform_motion_profile()
+    # profile.update_profile(X, Y, yaw, v, left, right)
+    # preform_motion_profile()
+    # robot.plot_actual_motion()
+    # robot.update_params()
+    # print robot.x, robot.y
 
 if __name__ == '__main__':
     main()

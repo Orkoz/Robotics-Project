@@ -36,9 +36,9 @@ class RClient(object):
             self.recv_thread = threading.Thread(target=self.recv_loop)
             self.recv_thread.start()
             return True
-        except(socket.error, e):
+        except socket.error, e:
             reason = get_error_name(e[0])
-            print("Socket Error: " + reason)
+            print "Socket Error: " + reason
         return False
 
     def recv_loop(self):
@@ -56,11 +56,11 @@ class RClient(object):
                         self.sensors = [float(s) for s in data.split()]
                     except ValueError:
                         pass
-            except(socket.error, e):
+            except socket.error, e:
                 errnum = e[0]
                 if errnum != errno.EAGAIN and errnum != errno.EWOULDBLOCK:
                     reason = get_error_name(errnum)
-                    print("Socket Error ({}): {}".format(errnum, reason))
+                    print "Socket Error ({}): {}".format(errnum, reason)
                 time.sleep(0.05)
 
     def sendmsg(self, msg):
