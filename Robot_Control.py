@@ -14,6 +14,9 @@ Kp = 1.0  # speed propotional gain
 ds = 10
 dt = 0.01
 k = 0.5  # control gain
+initial_yaw_range = 10
+sweeping_angle = 20
+sleep_time = 0.5
 
 
 class Robot(object):
@@ -88,13 +91,32 @@ class MotionProfile(object):
         self.left = []
         self.right = []
 
-    def update_profile(self, X, Y, yaw, v, left, right):
+    def update_profile(self, X, Y, yaw, v, s):
         self.X = X
         self.Y = Y
         self.yaw = yaw
         self.v = v
-        self.left = left
-        self.right = right
+        self.last_target_idx
+        self.s = s
+
+    def plot_motion_profile(self, x, y):
+        plt.subplots(1)
+        plt.plot(x, y, "xb", label="input")
+        plt.plot(self.X, self.Y, "-r", label="spline")
+        plt.grid(True)
+        plt.axis("equal")
+        plt.xlabel("x[m]")
+        plt.ylabel("y[m]")
+        plt.legend()
+
+        plt.subplots(1)
+        plt.plot(self.s, [np.rad2deg(iyaw) for iyaw in self.yaw], "-r", label="yaw")
+        plt.grid(True)
+        plt.legend()
+        plt.xlabel("line length[m]")
+        plt.ylabel("yaw angle[deg]")
+
+        plt.show()
 
 
 robot = Robot()
@@ -144,32 +166,25 @@ def create_motion_profile(x, y):
     return cubic_spline_planner.calc_spline_course(x, y, ds)
 
 
-def plot_motion_profile(x, y, X, Y, yaw, s):
-    plt.subplots(1)
-    plt.plot(x, y, "xb", label="input")
-    plt.plot(X, Y, "-r", label="spline")
-    plt.grid(True)
-    plt.axis("equal")
-    plt.xlabel("x[m]")
-    plt.ylabel("y[m]")
-    plt.legend()
-
-    plt.subplots(1)
-    plt.plot(s, [np.rad2deg(iyaw) for iyaw in yaw], "-r", label="yaw")
-    plt.grid(True)
-    plt.legend()
-    plt.xlabel("line length[m]")
-    plt.ylabel("yaw angle[deg]")
-
-    plt.show()
-
-
 def convert_angle_and_velocity_to_wheels_commends(delta_yaw, v):
-    DC = 500
-    normalize_yaw = (delta_yaw / np.pi) * 10
+    DC = v
+    normalize_yaw = (delta_yaw / np.pi) * 1000
     left = DC - normalize_yaw
     right = DC + normalize_yaw
     return left, right
+
+
+def face_initial_yaw():
+    initial_yaw = profile.yaw[0]
+    check_position()
+
+    while abs(robot.yaw - initial_yaw) < initial_yaw_range:
+        delta_yaw = pid_control(initial_yaw, robot.yaw)
+        left, right = convert_angle_and_velocity_to_wheels_commends(delta_yaw, 0)
+        robot.drive(int(left), int(right))
+        sleep(sleep_time)
+        robot.update_params()
+        check_position()
 
 
 def preform_motion_profile():
@@ -180,9 +195,9 @@ def preform_motion_profile():
     while last_idx > target_idx:
         a = pid_control(profile.v[target_idx], robot.v)
         delta_yaw, target_idx = stanley_control(target_idx)
-        left, right = convert_angle_and_velocity_to_wheels_commends(delta_yaw, a*robot.dt)
+        left, right = convert_angle_and_velocity_to_wheels_commends(delta_yaw, 500)
         robot.drive(int(left), int(right))
-        sleep(0.5)
+        sleep(sleep_time)
         robot.update_params()
         check_position()
 
@@ -239,8 +254,39 @@ def drive_back_and_recalculate_route():
 
 
 def pass_obstacle():
-    print()
+    position_the_robot_at_90_degree_to_obstacle()
+    drive_parallel_to_obstacle()
 
+    left, right = convert_angle_and_velocity_to_wheels_commends(0, 500)
+    robot.drive(int(left), int(right))
+    sleep(sleep_time)
+    robot.update_params()
+
+    left, right = convert_angle_and_velocity_to_wheels_commends(-90, 0)
+    robot.drive(int(left), int(right))
+    sleep(sleep_time)
+    robot.update_params()
+
+    left, right = convert_angle_and_velocity_to_wheels_commends(0, 500)
+    robot.drive(int(left), int(right))
+    sleep(sleep_time)
+    robot.update_params()
+
+
+def drive_parallel_to_obstacle():
+    while robot.Obs0 != 0:
+        left, right = convert_angle_and_velocity_to_wheels_commends(0, 500)
+        robot.drive(int(left), int(right))
+        sleep(sleep_time)
+        robot.update_params()
+        position_the_robot_at_90_degree_to_obstacle()
+
+def position_the_robot_at_90_degree_to_obstacle():
+    while robot.Obs0 != 0:
+        left, right = convert_angle_and_velocity_to_wheels_commends(sweeping_angle, 0)
+        robot.drive(int(left), int(right))
+        sleep(sleep_time)
+        robot.update_params()
 
 def map_robot_wheels_commends_to_yaw():
     yaw_map = np.array([0, 0, 0, 0])
@@ -253,24 +299,25 @@ def map_robot_wheels_commends_to_yaw():
     return yaw_map
 
 
-
 def main():
-    yaw_map = map_robot_wheels_commends_to_yaw()
-    np.savetxt("yaw_map.csv", yaw_map, delimiter=",")
+    # yaw_map = map_robot_wheels_commends_to_yaw()
+    # np.savetxt("yaw_map.csv", yaw_map, delimiter=",")
 
-    # x = [0.0, 25.0,  50.0,   25.0,   0.0]
-    # y = [0.0, 25.0,   0.0,  -25.0,   0.0]
-    #
-    # X, Y, yaw, ck, s = create_motion_profile(x, y)
-    # plot_motion_profile(x, y, X, Y, yaw, s)
-    # a = create_target_velocity_profile(ck, s)
-    # v = a * dt
-    # left, right = convert_angle_and_velocity_to_wheels_commends(yaw, a)
-    # profile.update_profile(X, Y, yaw, v, left, right)
-    # preform_motion_profile()
-    # robot.plot_actual_motion()
-    # robot.update_params()
-    # print robot.x, robot.y
+    robot.update_params();
+
+    x = robot.x + [0.0, 25.0,  50.0,   25.0,   0.0]
+    y = robot.y + [0.0, 25.0,   0.0,  -25.0,   0.0]
+
+    X, Y, yaw, ck, s = create_motion_profile(x, y)
+    face_initial_yaw()
+    v = create_target_velocity_profile(ck, s)
+    profile.update_profile(X, Y, yaw, v, s)
+    profile.plot_motion_profile(x, y)
+    preform_motion_profile()
+    robot.plot_actual_motion()
+    robot.update_params()
+    print robot.x, robot.y
+
 
 if __name__ == '__main__':
     main()
