@@ -14,7 +14,8 @@ Kp = 1.0  # speed propotional gain
 ds = 10
 dt = 0.01
 k = 0.5  # control gain
-initial_yaw_range = 10
+initial_yaw_delta = 10
+final_position_delta = 1
 sweeping_angle = 20
 sleep_time = 0.5
 
@@ -56,8 +57,11 @@ class Robot(object):
         self.V.append(self.v)
         self.T.append(self.T[-1] + self.dt)
 
-    def drive(self, left, right):
-        self.state.drive(left, right)
+    def drive(self, delta_yaw, v):
+        left, right = convert_angle_and_velocity_to_wheels_commends(delta_yaw, v)
+        self.state.drive(int(left), int(right))
+        sleep(sleep_time)
+        robot.update_params()
 
     def plot_actual_motion(self):
         plt.plot(self.X, self.Y, ".r", label="course")
@@ -178,7 +182,7 @@ def face_initial_yaw():
     initial_yaw = profile.yaw[0]
     check_position()
 
-    while abs(robot.yaw - initial_yaw) < initial_yaw_range:
+    while abs(robot.yaw - initial_yaw) < initial_yaw_delta:
         delta_yaw = pid_control(initial_yaw, robot.yaw)
         left, right = convert_angle_and_velocity_to_wheels_commends(delta_yaw, 0)
         robot.drive(int(left), int(right))
@@ -192,36 +196,49 @@ def preform_motion_profile():
     target_idx, _ = calc_target_index()
 
     last_idx = len(profile.X) - 1
-    while last_idx > target_idx:
+    reached_destination = (abs(robot.x - profile.X[-1]) < final_position_delta) and (abs(robot.y - profile.Y[-1]) < final_position_delta)
+    flag = check_position() and (last_idx > target_idx) and not reached_destination
+
+    while flag:
         a = pid_control(profile.v[target_idx], robot.v)
         delta_yaw, target_idx = stanley_control(target_idx)
-        left, right = convert_angle_and_velocity_to_wheels_commends(delta_yaw, 500)
-        robot.drive(int(left), int(right))
-        sleep(sleep_time)
-        robot.update_params()
-        check_position()
+        robot.drive(delta_yaw, 500)
+
+        reached_destination = (abs(robot.x - profile.X[-1]) < final_position_delta) and (abs(robot.y - profile.Y[-1]) < final_position_delta)
+        flag = (check_position()) or (last_idx > target_idx) or reached_destination
+
+    if reached_destination:
+        return 1
+    elif (not check_position()) or (last_idx <= target_idx):
+        reclculate_route(robot.x, robot.y)
 
 
 def check_position():
     # handling new obstacle.
     at0, at45L, at45R = facing_new_obstacle()
     if at0 or at45L or at45L:
+        robot.drive(0, 0)
         pass_obstacle()
+        return 0
 
     # handling the situation the we are too close to an obstacle.
     if are_we_too_close():
+        robot.drive(0, 0)
         drive_back_and_recalculate_route()
+        return 0
+
+    return 1
 
 
 def facing_new_obstacle():
     at0 = at45L = at45R = 0
 
     if robot.Obs0 != 0:
-        at0 = check_obstacle(robot.x, robot.y, np.arctan2(robot.y, robot.x), robot.Obs0, 0)
+        at0 = check_obstacle(robot.x, robot.y, robot.yaw, robot.Obs0, 0)
     if robot.Obs45L != 0:
-        at45L = check_obstacle(robot.x, robot.y, np.arctan2(robot.y, robot.x), robot.Obs45L, 45)
+        at45L = check_obstacle(robot.x, robot.y, robot.yaw, robot.Obs45L, 45)
     if robot.Obs45R != 0:
-        at45R = check_obstacle(robot.x, robot.y, np.arctan2(robot.y, robot.x), robot.Obs45R, -45)
+        at45R = check_obstacle(robot.x, robot.y, robot.yaw, robot.Obs45R, -45)
 
     return at0, at45L, at45R
 
@@ -250,36 +267,26 @@ def are_we_too_close():
 
 
 def drive_back_and_recalculate_route():
-    print()
+    robot.drive(0, -700)
 
 
 def pass_obstacle():
     position_the_robot_at_90_degree_to_obstacle()
     drive_parallel_to_obstacle()
 
-    left, right = convert_angle_and_velocity_to_wheels_commends(0, 500)
-    robot.drive(int(left), int(right))
-    sleep(sleep_time)
-    robot.update_params()
-
-    left, right = convert_angle_and_velocity_to_wheels_commends(-90, 0)
-    robot.drive(int(left), int(right))
-    sleep(sleep_time)
-    robot.update_params()
-
-    left, right = convert_angle_and_velocity_to_wheels_commends(0, 500)
-    robot.drive(int(left), int(right))
-    sleep(sleep_time)
-    robot.update_params()
+    robot.drive(0, 500)
+    robot.drive(90, 0)
+    robot.drive(0, 500)
 
 
 def drive_parallel_to_obstacle():
-    while robot.Obs0 != 0:
+    while robot.Obs45L != 0:
         left, right = convert_angle_and_velocity_to_wheels_commends(0, 500)
         robot.drive(int(left), int(right))
         sleep(sleep_time)
         robot.update_params()
         position_the_robot_at_90_degree_to_obstacle()
+
 
 def position_the_robot_at_90_degree_to_obstacle():
     while robot.Obs0 != 0:
@@ -287,6 +294,7 @@ def position_the_robot_at_90_degree_to_obstacle():
         robot.drive(int(left), int(right))
         sleep(sleep_time)
         robot.update_params()
+
 
 def map_robot_wheels_commends_to_yaw():
     yaw_map = np.array([0, 0, 0, 0])
