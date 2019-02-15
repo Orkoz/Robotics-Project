@@ -127,7 +127,6 @@ def add_connected(node_map, queue, node):
 
 
 
-
 if __name__ == '__main__':
     min_x = 0.0     # [cm]
     max_x = 50.0    # [cm]
