@@ -41,6 +41,7 @@ class Robot(object):
         self.YAW = []
         self.V = []
         self.T = [0]
+        self.csv_file = np.array([self.x, self.y, self.Dx, self.Dy, self.yaw, self.v, self.dt])
         self.update_params()
 
     def update_params(self):
@@ -56,6 +57,7 @@ class Robot(object):
         self.YAW.append(self.yaw)
         self.V.append(self.v)
         self.T.append(self.T[-1] + self.dt)
+        self.csv_file = np.vstack((self.csv_file, np.array([self.x, self.y, self.Dx, self.Dy, self.yaw, self.v, self.dt])))
 
     def drive(self, delta_yaw, v):
         left, right = convert_angle_and_velocity_to_wheels_commends(delta_yaw, v)
@@ -84,6 +86,8 @@ class Robot(object):
         plt.grid(True)
         plt.show()
 
+        np.savetxt("actual motion/yaw_map.csv", self.csv_file, delimiter=",")
+
 
 class MotionProfile(object):
     def __init__(self):
@@ -92,15 +96,13 @@ class MotionProfile(object):
         self.Y = []
         self.yaw = []
         self.v = []
-        self.left = []
-        self.right = []
+        self.s = []
 
     def update_profile(self, X, Y, yaw, v, s):
         self.X = X
         self.Y = Y
         self.yaw = yaw
         self.v = v
-        self.last_target_idx
         self.s = s
 
     def plot_motion_profile(self, x, y):
@@ -311,7 +313,7 @@ def main():
     # yaw_map = map_robot_wheels_commends_to_yaw()
     # np.savetxt("yaw_map.csv", yaw_map, delimiter=",")
 
-    robot.update_params();
+    robot.update_params()
 
     x = robot.x + [0.0, 25.0,  50.0,   25.0,   0.0]
     y = robot.y + [0.0, 25.0,   0.0,  -25.0,   0.0]

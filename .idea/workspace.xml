@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="9ea12e26-8c6a-48db-8786-dd2bdd1bbe42" name="Default" comment="Draft to pass_obstacle – handling the case where the obstacle is at Obs0.">
+    <list default="true" id="9ea12e26-8c6a-48db-8786-dd2bdd1bbe42" name="Default" comment="">
+      <change beforePath="" afterPath="$PROJECT_DIR$/.idea/codeStyles/codeStyleConfig.xml" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change beforePath="$PROJECT_DIR$/Robot_Control.py" afterPath="$PROJECT_DIR$/Robot_Control.py" />
     </list>
@@ -17,30 +19,20 @@
       <file leaf-file-name="Robot_Control.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/Robot_Control.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="275">
-              <caret line="268" column="36" lean-forward="false" selection-start-line="268" selection-start-column="4" selection-end-line="268" selection-end-column="36" />
+            <state relative-caret-position="296">
+              <caret line="325" column="28" lean-forward="true" selection-start-line="325" selection-start-column="28" selection-end-line="325" selection-end-column="28" />
               <folding>
                 <element signature="e#0#27#0" expanded="true" />
-                <element signature="e#455#958#0" expanded="false" />
-                <element signature="e#997#1514#0" expanded="false" />
-                <element signature="e#1559#1736#0" expanded="false" />
-                <element signature="e#1780#2260#0" expanded="false" />
-                <element signature="e#2296#3203#0" expanded="false" />
-                <element signature="e#2324#2490#0" expanded="false" />
-                <element signature="e#2547#2666#0" expanded="false" />
-                <element signature="e#2717#3203#0" expanded="false" />
-                <element signature="e#3292#3734#0" expanded="false" />
-                <element signature="e#3766#4289#0" expanded="false" />
-                <element signature="e#4330#4360#0" expanded="false" />
-                <element signature="e#4400#4456#0" expanded="false" />
-                <element signature="e#4528#4665#0" expanded="false" />
-                <element signature="e#6797#7032#0" expanded="false" />
-                <element signature="e#7110#7242#0" expanded="false" />
-                <element signature="e#7273#7366#0" expanded="false" />
-                <element signature="e#7652#7905#0" expanded="false" />
-                <element signature="e#7963#8171#0" expanded="false" />
-                <element signature="e#8218#8522#0" expanded="false" />
-                <element signature="e#8541#9092#0" expanded="false" />
+                <element signature="e#1779#1956#0" expanded="false" />
+                <element signature="e#3535#3977#0" expanded="false" />
+                <element signature="e#4573#4603#0" expanded="false" />
+                <element signature="e#4643#4699#0" expanded="false" />
+                <element signature="e#6236#6597#0" expanded="false" />
+                <element signature="e#6631#6991#0" expanded="false" />
+                <element signature="e#7040#7275#0" expanded="false" />
+                <element signature="e#7516#7609#0" expanded="false" />
+                <element signature="e#7895#8148#0" expanded="false" />
+                <element signature="e#8206#8414#0" expanded="false" />
               </folding>
             </state>
           </provider>
@@ -126,7 +118,7 @@
     <property name="nodejs_interpreter_path.stuck_in_default_project" value="undefined stuck path" />
     <property name="nodejs_npm_path_reset_for_default_project" value="true" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$" />
-    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
+    <property name="settings.editor.selected.configurable" value="preferences.sourceCode" />
   </component>
   <component name="RunDashboard">
     <option name="ruleStates">
@@ -182,20 +174,28 @@
       <option name="project" value="LOCAL" />
       <updated>1550228309710</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="0. Draft to &quot;pass_obstacle&quot;&#10;1.&#9;Fixed a bug at “facing_new_obstacle”&#10;2.&#9;Fixed a bug at “drive_parallel_to_obstacle”&#10;3.&#9;Change “robot.drive” to be more extensive &#10;4.&#9;Change “preform_motion_profile” while stopping condition to handle all cases of stopping the motion.&#10;5.&#9;Finished “drive_back_and_recalculate_route”">
+      <created>1550235186469</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1550235186469</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="-8" y="-8" width="1936" height="1056" extended-state="6" />
+    <frame x="-8" y="-8" width="1552" height="840" extended-state="6" />
+    <editor active="true" />
     <layout>
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32998884" sideWeight="0.5021322" order="7" side_tool="true" content_ui="tabs" />
       <window_info id="Documentation" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32995737" sideWeight="0.5" order="-1" side_tool="false" content_ui="tabs" x="0" y="0" width="434" height="856" />
-      <window_info id="Version Control" active="true" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.32998884" sideWeight="0.4978678" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.22320117" sideWeight="0.4978678" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32998884" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.2521322" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.31702414" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
       <window_info id="R Packages" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="-1" side_tool="false" content_ui="tabs" />
       <window_info id="Docker" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="R Graphics" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="-1" side_tool="false" content_ui="tabs" />
@@ -217,16 +217,53 @@
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="1" />
   </component>
+  <component name="Vcs.Log.History.Properties">
+    <option name="COLUMN_ORDER">
+      <list>
+        <option value="0" />
+        <option value="2" />
+        <option value="3" />
+        <option value="1" />
+      </list>
+    </option>
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State>
+              <option name="RECENTLY_FILTERED_USER_GROUPS">
+                <collection />
+              </option>
+              <option name="RECENTLY_FILTERED_BRANCH_GROUPS">
+                <collection />
+              </option>
+              <option name="COLUMN_ORDER">
+                <list>
+                  <option value="0" />
+                  <option value="1" />
+                  <option value="2" />
+                  <option value="3" />
+                </list>
+              </option>
+            </State>
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
   <component name="VcsContentAnnotationSettings">
     <option name="myLimit" value="2678400000" />
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Draft to pass_obstacle – handling the case where the obstacle is at Obs0." />
-    <option name="LAST_COMMIT_MESSAGE" value="Draft to pass_obstacle – handling the case where the obstacle is at Obs0." />
+    <MESSAGE value="0. Draft to &quot;pass_obstacle&quot;&#10;1.&#9;Fixed a bug at “facing_new_obstacle”&#10;2.&#9;Fixed a bug at “drive_parallel_to_obstacle”&#10;3.&#9;Change “robot.drive” to be more extensive &#10;4.&#9;Change “preform_motion_profile” while stopping condition to handle all cases of stopping the motion.&#10;5.&#9;Finished “drive_back_and_recalculate_route”" />
+    <option name="LAST_COMMIT_MESSAGE" value="0. Draft to &quot;pass_obstacle&quot;&#10;1.&#9;Fixed a bug at “facing_new_obstacle”&#10;2.&#9;Fixed a bug at “drive_parallel_to_obstacle”&#10;3.&#9;Change “robot.drive” to be more extensive &#10;4.&#9;Change “preform_motion_profile” while stopping condition to handle all cases of stopping the motion.&#10;5.&#9;Finished “drive_back_and_recalculate_route”" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
-      <option name="time" value="3" />
+      <option name="time" value="4" />
     </breakpoint-manager>
     <watches-manager />
   </component>
@@ -279,30 +316,20 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/Robot_Control.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="275">
-          <caret line="268" column="36" lean-forward="false" selection-start-line="268" selection-start-column="4" selection-end-line="268" selection-end-column="36" />
+        <state relative-caret-position="296">
+          <caret line="325" column="28" lean-forward="true" selection-start-line="325" selection-start-column="28" selection-end-line="325" selection-end-column="28" />
           <folding>
             <element signature="e#0#27#0" expanded="true" />
-            <element signature="e#455#958#0" expanded="false" />
-            <element signature="e#997#1514#0" expanded="false" />
-            <element signature="e#1559#1736#0" expanded="false" />
-            <element signature="e#1780#2260#0" expanded="false" />
-            <element signature="e#2296#3203#0" expanded="false" />
-            <element signature="e#2324#2490#0" expanded="false" />
-            <element signature="e#2547#2666#0" expanded="false" />
-            <element signature="e#2717#3203#0" expanded="false" />
-            <element signature="e#3292#3734#0" expanded="false" />
-            <element signature="e#3766#4289#0" expanded="false" />
-            <element signature="e#4330#4360#0" expanded="false" />
-            <element signature="e#4400#4456#0" expanded="false" />
-            <element signature="e#4528#4665#0" expanded="false" />
-            <element signature="e#6797#7032#0" expanded="false" />
-            <element signature="e#7110#7242#0" expanded="false" />
-            <element signature="e#7273#7366#0" expanded="false" />
-            <element signature="e#7652#7905#0" expanded="false" />
-            <element signature="e#7963#8171#0" expanded="false" />
-            <element signature="e#8218#8522#0" expanded="false" />
-            <element signature="e#8541#9092#0" expanded="false" />
+            <element signature="e#1779#1956#0" expanded="false" />
+            <element signature="e#3535#3977#0" expanded="false" />
+            <element signature="e#4573#4603#0" expanded="false" />
+            <element signature="e#4643#4699#0" expanded="false" />
+            <element signature="e#6236#6597#0" expanded="false" />
+            <element signature="e#6631#6991#0" expanded="false" />
+            <element signature="e#7040#7275#0" expanded="false" />
+            <element signature="e#7516#7609#0" expanded="false" />
+            <element signature="e#7895#8148#0" expanded="false" />
+            <element signature="e#8206#8414#0" expanded="false" />
           </folding>
         </state>
       </provider>
