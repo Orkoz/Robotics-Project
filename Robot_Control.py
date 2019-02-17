@@ -14,7 +14,7 @@ Kp = 1.0  # speed propotional gain
 ds = 10
 dt = 0.01
 k = 0.5  # control gain
-initial_yaw_delta = 10
+initial_yaw_delta = 2
 final_position_delta = 1
 sweeping_angle = 20
 sleep_time = 0.5
@@ -23,7 +23,7 @@ sleep_time = 0.5
 class Robot(object):
     def __init__(self):
         super(Robot, self).__init__()
-        self.state = RClient("192.168.1.151", 2777)
+        self.state = RClient("192.168.1.157", 2777)
         self.state.connect()
         self.x = 0.0
         self.y = 0.0
@@ -45,8 +45,10 @@ class Robot(object):
         self.update_params()
 
     def update_params(self):
+        r = self.state.sense()
         x, y, self.Dx, self.Dy, self.Obs0, self.Obs45L, self.Obs45R = self.state.sense()
-        self.yaw = (np.arcsin(self.Dy)/abs(np.arcsin(self.Dy))) * np.arccos(self.Dx)
+        # self.yaw = (np.arcsin(self.Dy)/abs(np.arcsin(self.Dy))) * np.arccos(self.Dx)
+        self.yaw = np.arctan2(self.Dy, self.Dx)
         self.dt = time() - self.time_stamp
         self.time_stamp = time()
         self.v = np.sqrt((x - self.x)**2 + (y - self.y)**2) / self.dt
@@ -175,19 +177,22 @@ def create_motion_profile(x, y):
 def convert_angle_and_velocity_to_wheels_commends(delta_yaw, v):
     DC = v
     normalize_yaw = (delta_yaw / np.pi) * 1000
-    left = DC - normalize_yaw
-    right = DC + normalize_yaw
+    left = DC + normalize_yaw
+    right = DC - normalize_yaw
     return left, right
 
 
 def face_initial_yaw():
     initial_yaw = profile.yaw[0]
-    check_position()
-
-    while abs(robot.yaw - initial_yaw) < initial_yaw_delta:
+    if not check_position():
+        reclculate_route(robot.x, robot.y)
+    a = np.rad2deg(robot.yaw) - np.rad2deg(initial_yaw)
+    robot.update_params()
+    while abs(np.rad2deg(robot.yaw) - np.rad2deg(initial_yaw)) > initial_yaw_delta:
         delta_yaw = pid_control(initial_yaw, robot.yaw)
         robot.drive(delta_yaw, 0)
-        check_position()
+        if not check_position():
+            reclculate_route(robot.x, robot.y)
 
 
 def preform_motion_profile():
@@ -263,7 +268,15 @@ def check_obstacle(robot_x, robot_y, robot_angle, obs_dis, obs_angle):
 
 
 def are_we_too_close():
-    return robot.Obs0 <= Closeness0 or robot.Obs45L <= Closeness45 or robot.Obs45R <= Closeness45
+    a = robot.Obs0
+    b = Closeness0
+    c = robot.Obs45L
+    d = robot.Obs45R
+    e = Closeness45
+
+    return (robot.Obs0 <= Closeness0 and robot.Obs0 != -1) or \
+           (robot.Obs45L <= Closeness45 and robot.Obs45L != -1) or \
+           (robot.Obs45R <= Closeness45 and robot.Obs45R != -1)
 
 
 def drive_back_and_recalculate_route():
@@ -309,12 +322,18 @@ def main():
     # yaw_map = map_robot_wheels_commends_to_yaw()
     # np.savetxt("yaw_map.csv", yaw_map, delimiter=",")
 
-    robot.update_params()
+    x = []
+    y = []
+  #  x.append(robot.x)
+  #  y.append(robot.y)
 
-    x = robot.x + [0.0, 25.0,  50.0,   25.0,   0.0]
-    y = robot.y + [0.0, 25.0,   0.0,  -25.0,   0.0]
+    x = [0.0, 25.0,  50.0,   25.0,   0.0]
+    y = [0.0, 25.0,   0.0,  -25.0,   0.0]
 
     X, Y, yaw, ck, s = create_motion_profile(x, y)
+    profile.update_profile(X, Y, yaw, [], s)
+    profile.plot_motion_profile(x, y)
+    face_initial_yaw()
     v = create_target_velocity_profile(ck, s)
     profile.update_profile(X, Y, yaw, v, s)
     profile.plot_motion_profile(x, y)
