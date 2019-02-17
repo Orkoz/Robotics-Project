@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 import sys
 import socket
 import json
@@ -8,18 +6,19 @@ import errno
 import threading
 from errnames import get_error_name
 
-def get_ip():
-    from netifaces import interfaces, ifaddresses, AF_INET
-    for interface in interfaces():
-        try:
-            for link in ifaddresses(interface)[AF_INET]:
-                ip = str(link['addr'])
-                if ip.startswith('192.168.1.'):
-                    print ip
-                    return ip
-        except KeyError:
-            pass
-    return '127.0.0.1'
+
+# def get_ip():
+#     # from netifaces import interfaces, ifaddresses, AF_INET
+#     for interface in interfaces():
+#         try:
+#             for link in ifaddresses(interface)[AF_INET]:
+#                 ip = str(link['addr'])
+#                 if ip.startswith('192.168.1.'):
+#                     print ip
+#                     return ip
+#         except KeyError:
+#             pass
+#     return '127.0.0.1'
 
 
 class RClient(object):
@@ -121,7 +120,7 @@ def kbd():
 def test():
     global done
     global cmd
-    r = RClient("192.168.1.151", 2777)
+    r = RClient("192.168.1.157", 2777)
     counter = 0
     if r.connect():
         kbd_thread = threading.Thread(target=kbd)
@@ -139,15 +138,16 @@ def test():
             time.sleep(0.1)
             counter += 1
             # if (counter%10)==0:
-            print r.sense()
+            # print r.sense()
         r.terminate()
         print "Done"
         kbd_thread.join()
     else:
         print "Failed to connect"
 
+
 def test2():
-    r = RClient("192.168.1.151", 2777)
+    r = RClient("192.168.1.157", 2777)
     if r.connect():
         for i in range(30):
             r.drive(int(1000), int(-1000))
@@ -163,4 +163,3 @@ def test2():
 
 if __name__ == '__main__':
     test2()
-
