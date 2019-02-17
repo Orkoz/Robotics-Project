@@ -152,11 +152,11 @@ def test2():
         for i in range(30):
             r.drive(int(1000), int(-1000))
             time.sleep(0.1)
-            print r.sense()
-        for i in range(10):
-            r.drive(int(1000), int(1000))
-            time.sleep(0.1)
-            print r.sense()
+            # print r.sense()
+        # for i in range(10):
+        #     r.drive(int(1000), int(1000))
+        #     time.sleep(0.1)
+        #     print r.sense()
     else:
         print "Failed to connect"
 
