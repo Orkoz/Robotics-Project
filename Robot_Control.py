@@ -186,15 +186,13 @@ def face_initial_yaw():
 
     while abs(robot.yaw - initial_yaw) < initial_yaw_delta:
         delta_yaw = pid_control(initial_yaw, robot.yaw)
-        left, right = convert_angle_and_velocity_to_wheels_commends(delta_yaw, 0)
-        robot.drive(int(left), int(right))
-        sleep(sleep_time)
-        robot.update_params()
+        robot.drive(delta_yaw, 0)
         check_position()
 
 
 def preform_motion_profile():
     check_position()
+    face_initial_yaw()
     target_idx, _ = calc_target_index()
 
     last_idx = len(profile.X) - 1
@@ -283,10 +281,8 @@ def pass_obstacle():
 
 def drive_parallel_to_obstacle():
     while robot.Obs45L != 0:
-        left, right = convert_angle_and_velocity_to_wheels_commends(0, 500)
-        robot.drive(int(left), int(right))
-        sleep(sleep_time)
-        robot.update_params()
+        robot.drive(0, 500)
+        check_position()
         position_the_robot_at_90_degree_to_obstacle()
 
 
@@ -319,7 +315,6 @@ def main():
     y = robot.y + [0.0, 25.0,   0.0,  -25.0,   0.0]
 
     X, Y, yaw, ck, s = create_motion_profile(x, y)
-    face_initial_yaw()
     v = create_target_velocity_profile(ck, s)
     profile.update_profile(X, Y, yaw, v, s)
     profile.plot_motion_profile(x, y)
@@ -327,6 +322,7 @@ def main():
     robot.plot_actual_motion()
     robot.update_params()
     print robot.x, robot.y
+    robot.state.terminate()
 
 
 if __name__ == '__main__':
