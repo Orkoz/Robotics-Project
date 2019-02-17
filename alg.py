@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import numpy as np
 import Queue
 import math
 
@@ -15,8 +16,7 @@ class Node:
         self.val = value
         self.next_x = -1
         self.next_y = -1
-        self.prev = [[-1, -1, -1, -1, -1, -1, -1, -1],
-                     [-1, -1, -1, -1, -1, -1, -1, -1]]
+        self.prev = Queue.PriorityQueue()
 
     def __str__(self):
         return str(self.x) + "," + str(self.y) + "," + str(self.val) + "," + str(self.next_x) + "," + str(self.next_y)
@@ -36,24 +36,37 @@ class NodeMap:
         self.gx, self.gy = world_to_map(self, world_gx, world_gy)
 
 
+class Cord:
+    def __init__(self, priority, loc_x, loc_y):
+        self.priority = priority
+        self.x = loc_x
+        self.y = loc_y
+        return
+
+    def __cmp__(self, other):
+        return cmp(self.priority, other.priority)
+
+    def __str__(self):
+        return str(self.x) + "," + str(self.y) + "," + str(self.priority)
+
+
 def calc_map_size(max_val, min_val, resolution):
-    return int(round((max_val - min_val) / resolution))
+    return int(round((max_val - min_val) / resolution)) + 2
 
 
 def world_to_map(node_map, point_x, point_y):
-    map_point_x = (point_x - node_map.real_min_x) / node_map.reso
-    map_point_y = (point_y - node_map.real_min_y) / node_map.reso
+    map_point_x = int(round((point_x - node_map.real_min_x) / node_map.reso)) + 1
+    map_point_y = int(round((point_y - node_map.real_min_y) / node_map.reso)) + 1
     return map_point_x, map_point_y
 
 
 def map_to_world(node_map, point_x, point_y):
-    world_point_x = (point_x + node_map.real_min_x) / node_map.reso
-    world_point_y = (point_y + node_map.real_min_y) / node_map.reso
+    world_point_x = (point_x - 1) * node_map.reso + node_map.real_min_x
+    world_point_y = (point_y - 1) * node_map.reso + node_map.real_min_y
     return world_point_x, world_point_y
 
 
-def construct_node_map(min_x, max_x, min_y, max_y, world_gx, world_gy, resolution):
-    node_map = NodeMap(min_x, max_x, min_y, max_y, world_gx, world_gy, resolution)
+def construct_node_map(node_map):
     size_x = node_map.size_x
     size_y = node_map.size_y
     gx = node_map.gx
@@ -66,9 +79,8 @@ def construct_node_map(min_x, max_x, min_y, max_y, world_gx, world_gy, resolutio
                 node_map.map[i, j] = Node(i, j, 2.0)
             else:
                 node_map.map[i, j] = Node(i, j, 0.0)
-
-    print_node_map(node_map, 2, 2)
-    return node_map, gx, gy
+    # print_node_map(node_map, 2, 2)
+    # print_node_mat(node_map, 2, 2)
 
 
 def print_node_map(node_map, robot_x, robot_y):
@@ -83,8 +95,21 @@ def print_node_map(node_map, robot_x, robot_y):
                 plt.plot(i, j, "xb")
             elif i == robot_x and j == robot_y:
                 plt.plot(i, j, "or")
-
     plt.grid(True)
+    return plt
+
+
+def print_node_mat(node_map, robot_x, robot_y):
+    fig, ax = plt.subplots()
+    intersection_matrix = np.random.randint(0, 1, size=(node_map.size_x, node_map.size_y))
+    for i in xrange(node_map.size_x):
+        for j in xrange(node_map.size_y):
+            intersection_matrix[i, j] = node_map.map[i, j].val
+    ax.matshow(np.transpose(intersection_matrix), cmap=plt.cm.Blues)
+    for i in xrange(node_map.size_x):
+        for j in xrange(node_map.size_y):
+            c = intersection_matrix[i, j]
+            ax.text(i, j, str(c), va='center', ha='center')
     plt.show()
 
 
@@ -103,17 +128,19 @@ def wave_front(node_map):
         temp_node = q.get()
         if temp_node.val == -2.0:  # start node
             flag_start = 1
-            q.put(node_map.map[temp_node.x, temp_node.y])
-        elif temp_node.val == -3.0:
+            q.put(start)
+        elif temp_node.val == -3.0:  # finish node
             if flag_start == 1:
                 break
             else:
-                q.put(node_map.map[temp_node.x, temp_node.y])
+                d += 1
+                q.put(finish)
         else:
             flag_start = 0
             node_map.map[temp_node.x, temp_node.y].val = d
+            # print_node_mat(node_map, 2, 2)
+            add_next(node_map, temp_node.x, temp_node.y)
             add_connected(node_map, q, temp_node)
-    return node_map
 
 
 def add_connected(node_map, queue, node):
@@ -125,6 +152,61 @@ def add_connected(node_map, queue, node):
                     queue.put(node_map.map[i, j])
 
 
+def distance_to_goal(loc_x, loc_y, gx, gy):
+    return (loc_x - gx)**2 + (loc_y - gy)**2
+
+
+def add_next(node_map, loc_x, loc_y):
+    gx = node_map.gx
+    gy = node_map.gy
+    val = node_map.map[loc_x, loc_y].val
+    min_val = val
+    min_dis = node_map.size_x**2 + node_map.size_y**2
+    for i in [loc_x - 1, loc_x, loc_x + 1]:
+        for j in [loc_y - 1, loc_y, loc_y + 1]:
+            if i >= 0 and j >= 0 and i < node_map.size_x and j < node_map.size_y:  # in the map
+                temp_val = node_map.map[i, j].val
+                if temp_val >= 2 and not(i == loc_x and j == loc_y):  # only free space that all ready have a number and not itself
+                    if min_val >= temp_val:  # smallest val
+                        if min_dis >= distance_to_goal(i, j, gx, gy):  # closest to goal
+                            min_dis = distance_to_goal(i, j, gx, gy)
+                            node_map.map[loc_x, loc_y].next_x = i
+                            node_map.map[loc_x, loc_y].next_y = j
+    next_x = node_map.map[loc_x, loc_y].next_x
+    next_y = node_map.map[loc_x, loc_y].next_y
+    if next_x != -1:
+        node_map.map[next_x, next_y].prev.put(Cord(val, loc_x, loc_y))
+        # print("(" + str(loc_x) + "," + str(loc_y) + ") v = " + str(val) + " to: (" +
+        #       str(next_x) + "," + str(next_y) + ") v = " + str(node_map.map[next_x, next_y].val))
+
+
+def root(node_map, robot_x, robot_y):
+    temp_x, temp_y = world_to_map(node_map, robot_x, robot_y)
+    val = node_map.map[temp_x, temp_y].val
+    x = []
+    y = []
+    x_world = []
+    y_world = []
+    x.append(temp_x)
+    y.append(temp_y)
+    x_world.append(robot_x)
+    y_world.append(robot_y)
+    while val != 2:
+        next_x = node_map.map[x[-1], y[-1]].next_x
+        next_y = node_map.map[x[-1], y[-1]].next_y
+        x.append(next_x)
+        y.append(next_y)
+        xx, yy = map_to_world(node_map, next_x, next_y)
+        x_world.append(xx)
+        y_world.append(yy)
+        val = node_map.map[next_x, next_y].val
+
+    # print_node_map(node_map, temp_x, temp_y)
+    # plt.plot(x, y, "or")
+    # plt.show()
+    return x_world, x_world
+
+
 
 
 if __name__ == '__main__':
@@ -132,7 +214,25 @@ if __name__ == '__main__':
     max_x = 50.0    # [cm]
     min_y = -25.0   # [cm]
     max_y = 25.0    # [cm]
-    real_gx = 40.0  # [cm]
-    real_gy = 15.0  # [cm]
-    reso = 1        # [cm]
-    node_map = construct_node_map(min_x, max_x, min_y, max_y, real_gx, real_gy, reso)
+    world_gx = 43.0  # [cm]
+    world_gy = 15.0  # [cm]
+    world_sx = 0.0
+    world_sy = 0.0
+    reso = 5        # [cm]
+    node_map = NodeMap(min_x, max_x, min_y, max_y, world_gx, world_gy, reso)
+    construct_node_map(node_map)
+
+    # x, y = world_to_map(node_map, world_gx, world_gy)
+    # xx, yy = map_to_world(node_map, x, y)
+
+    # add obstical
+    node_map.map[5, 5].val = 1.0
+    node_map.map[5, 6].val = 1.0
+    node_map.map[5, 4].val = 1.0
+    node_map.map[6, 4].val = 1.0
+    # wave_front
+    wave_front(node_map)
+    print_node_mat(node_map, 2, 2)
+    # print_node_map(node_map, 2, 2)
+    x, y = root(node_map, world_sx, world_sy)
+    print_node_map(node_map, 2, 2)
