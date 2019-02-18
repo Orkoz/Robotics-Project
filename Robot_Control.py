@@ -8,23 +8,24 @@ import matplotlib.pyplot as plt
 # Variables
 f = 1
 Closeness0 = 10.0  # [cm]
-Closeness45 = 7.0 # [cm]
+Closeness45 = 7.0  # [cm]
 Kp = 1.0  # speed proportional gain
 ds = 10  # [cm] Quantization of the motion
 k = 0.5  # control gain
-initial_yaw_delta = 2.0  # [deg]
-final_position_delta = 1.0  # [cm]
-sweeping_angle = 10.0  # [cm]
-coursing_velocity = 500.0  # [wheel power]
+initial_yaw_delta = 10.0  # [deg]
+final_position_delta = 10.0  # [cm]
+sweeping_angle = 375.0  # [cm]
+coursing_velocity = 450.0  # [wheel power]
 sleep_time = 0.5  # [sec]
 velocity_gain = 700  # [wheel power]
-velocity_offset = 300  # [wheel power]
+velocity_offset = 330  # [wheel power]
+next_idx = 1
 
 
 class Robot(object):
     def __init__(self):
         super(Robot, self).__init__()
-        self.state = RClient("192.168.1.157", 2777)
+        self.state = RClient("192.168.1.153", 2777)
         self.state.connect()
         self.x = 0.0
         self.y = 0.0
@@ -43,10 +44,11 @@ class Robot(object):
         self.V = []
         self.T = [0]
         self.csv_file = np.array([self.x, self.y, self.Dx, self.Dy, self.yaw, self.v, self.dt])
-        # self.update_params()
+        sleep(1)
+        self.update_params()
+        sleep(1)
 
     def update_params(self):
-        r = self.state.sense()
         x, y, self.Dx, self.Dy, self.Obs0, self.Obs45L, self.Obs45R = self.state.sense()
         # self.yaw = (np.arcsin(self.Dy)/abs(np.arcsin(self.Dy))) * np.arccos(self.Dx)
         self.yaw = np.rad2deg(np.arctan2(self.Dy, self.Dx))
@@ -69,7 +71,8 @@ class Robot(object):
         robot.update_params()
 
     def plot_actual_motion(self):
-        plt.plot(self.X, self.Y, ".r", label="course")
+        plt.plot(self.X, self.Y, label="course")
+        plt.plot(profile.X, profile.Y, "r", label="spline")
         plt.legend()
         plt.title('actual X-Y coordinates')
         plt.xlabel("x[m]")
@@ -78,14 +81,14 @@ class Robot(object):
         plt.grid(True)
         plt.show()
 
-        plt.plot(self.T, self.V, "-r")
+        plt.plot(self.T, self.V)
         plt.title('actual velocity')
         plt.xlabel("Time[s]")
         plt.ylabel("Speed[km/h]")
         plt.grid(True)
         plt.show()
 
-        plt.plot(self.T, self.YAW, "-r")
+        plt.plot(self.T, self.YAW)
         plt.title('actual yaw')
         plt.xlabel("Time[s]")
         plt.ylabel("Yaw[deg]")
@@ -114,7 +117,7 @@ class MotionProfile(object):
     def plot_motion_profile(self, x, y):
         plt.subplots(1)
         plt.plot(x, y, "xb", label="input")
-        plt.plot(self.X, self.Y, "-r", label="spline")
+        plt.plot(self.X, self.Y, "r", label="spline")
         plt.title('plan motion - X-Y coordinates')
         plt.grid(True)
         plt.axis("equal")
@@ -123,7 +126,7 @@ class MotionProfile(object):
         plt.legend()
 
         plt.subplots(1)
-        plt.plot(self.s, self.yaw, "-r", label="yaw")
+        plt.plot(self.s, self.yaw, "r", label="yaw")
         plt.title('plan motion - yaw')
         plt.grid(True)
         plt.legend()
@@ -157,14 +160,18 @@ def create_target_velocity_profile(c, s): # TODO improve
 
 def convert_angle_and_velocity_to_wheels_commends(delta_yaw, v):
     DC = v
-    normalize_yaw = (delta_yaw / 180) * velocity_gain + velocity_offset
-    left = DC + normalize_yaw
-    right = DC - normalize_yaw
+    # normalize_yaw = (delta_yaw / 180) * velocity_gain + velocity_offset * np.sign(delta_yaw)
+    left = v + delta_yaw
+    right = v - delta_yaw
+    if np.abs(left) > 1000:
+        left = np.sign(left)*1000
+    if np.abs(right) > 1000:
+        right = np.sign(right)*1000
     return left, right
 
 
 def stanley_control(last_target_idx):
-    current_target_idx, error_front_axle = calc_target_index()
+    current_target_idx = calc_target_index()
 
     if last_target_idx >= current_target_idx:
         current_target_idx = last_target_idx
@@ -172,9 +179,14 @@ def stanley_control(last_target_idx):
     # theta_e corrects the heading error
     theta_e = profile.yaw[current_target_idx] - robot.yaw
     # theta_d corrects the cross track error
-    theta_d = np.arctan2(k * error_front_axle, robot.v)
+    # theta_d = np.arctan2(k * error_front_axle, robot.v)
+    x_hat = profile.X[current_target_idx]+k*np.cos(profile.yaw[current_target_idx]) - robot.x
+    y_hat = profile.Y[current_target_idx]+k*np.sin(profile.yaw[current_target_idx]) - robot.y
+    theta_d = np.arctan2(y_hat, x_hat) * 10
+    print('theta_e: ' + str(theta_e))
+    print('theta_d: ' + str(theta_d))
     # Steering control
-    delta = theta_e + theta_d
+    delta = theta_e - theta_d
 
     return delta, current_target_idx
 
@@ -189,13 +201,17 @@ def calc_target_index():
     dy = [fy - icy for icy in profile.Y]
     d = [np.sqrt(idx ** 2 + idy ** 2) for (idx, idy) in zip(dx, dy)]
     closest_error = min(d)
-    target_idx = d.index(closest_error)
+    target_idx = d.index(closest_error) + next_idx
 
+    if target_idx >= (len(profile.X) - 1):
+        target_idx = (len(profile.X) - 1)
+
+    print('target_idx: ' + str(target_idx))
     # Project RMS error onto front axle vector
-    front_axle_vec = [robot.Dx, robot.Dy]
-    error_front_axle = np.dot([dx[target_idx], dy[target_idx]], front_axle_vec)
+    # front_axle_vec = [robot.Dx, robot.Dy]
+    # error_front_axle = np.dot([dx[target_idx], dy[target_idx]], front_axle_vec)
 
-    return target_idx, error_front_axle
+    return target_idx
 
 
 def pid_control(target, current):
@@ -204,32 +220,45 @@ def pid_control(target, current):
 
 def face_initial_yaw():
     initial_yaw = profile.yaw[0]
+    d_yaw = robot.yaw - initial_yaw
+    print(d_yaw)
     while abs(robot.yaw - initial_yaw) > initial_yaw_delta:
-        if robot.yaw - initial_yaw < 180:
+        if robot.yaw - initial_yaw < 0:
             robot.drive(sweeping_angle, 0)
         else:
-            robot.drive(sweeping_angle, 0)
+            robot.drive(-1*sweeping_angle, 0)
 
 
 def preform_motion_profile():
     face_initial_yaw()
-    target_idx, _ = calc_target_index()
+    target_idx = calc_target_index()
 
     last_idx = len(profile.X) - 1
     reached_destination = (abs(robot.x - profile.X[-1]) < final_position_delta) and (abs(robot.y - profile.Y[-1]) < final_position_delta)
-    flag = not check_position() and (last_idx > target_idx) and not reached_destination
+    flag = check_position() and (last_idx > target_idx) and not reached_destination
 
     while flag:
-        a = pid_control(profile.v[target_idx], robot.v)
+        # a = pid_control(profile.v[target_idx], robot.v)
         delta_yaw, target_idx = stanley_control(target_idx)
-        robot.drive(delta_yaw, coursing_velocity)
+        robot.drive(15*delta_yaw, coursing_velocity)
 
         reached_destination = (abs(robot.x - profile.X[-1]) < final_position_delta) and (abs(robot.y - profile.Y[-1]) < final_position_delta)
-        flag = not check_position() or (last_idx > target_idx) or reached_destination
+        flag = check_position() and (last_idx > target_idx) and not reached_destination
+
+        plt.plot(robot.X, robot.Y, label="course")
+        plt.plot(profile.X, profile.Y, "r", label="spline")
+        plt.plot(profile.X, profile.Y, ".b", label="spline")
+        plt.legend()
+        plt.title('actual X-Y coordinates')
+        plt.xlabel("x[m]")
+        plt.ylabel("y[m]")
+        plt.axis("equal")
+        plt.grid(True)
+        plt.show()
 
     if reached_destination:
-        return 1
-    elif (check_position()) or (last_idx <= target_idx):
+        return 0
+    elif (not check_position()) or (last_idx <= target_idx):
         recalculate_route(robot.x, robot.y)
 
 
@@ -303,8 +332,11 @@ def position_the_robot_at_90_degree_to_obstacle():
 
 
 def recalculate_route(x_int, y_int):
-    x = [0.0, 100.0, 300.0, 100.0, 0.0]
-    y = [0.0, 100.0, 0.0, -100.0, 0.0]
+    # x = [0.0, 60.0, 120.0, 60]
+    # y = [0.0, -60.0, 0.0, 60]
+
+    x = [0.0, 50.0, 100.0, 150.0, 200]
+    y = [0.0, -25.0, 0, 25.0, 0.0]
 
     x = [xi + x_int for xi in x]
     y = [yi + y_int for yi in y]
@@ -316,20 +348,21 @@ def recalculate_route(x_int, y_int):
 
 
 def map_robot_wheels_commends_to_yaw():
-    yaw_map = np.array([0, 0, 0, 0])
-    for i in range(200, 1000, 5):
-        for j in range(-200, -1000, -5):
-            robot.drive(int(i), int(j))
+    yaw_map = np.array([0, 0, 0, 0, 0])
+    for i in range(300, 700, 10):
+        for j in range(-300, -700, -10):
+            robot.state.drive(int(i), int(j))
             sleep(1)
             robot.update_params()
+            print(i, j, robot.Dx, robot.Dy, robot.yaw)
             yaw_map = np.vstack((yaw_map, np.array([i, j, robot.Dx, robot.Dy, robot.yaw])))
     return yaw_map
 
 
 def map_robot_wheels_commends_to_speed():
-    yaw_map = np.array([0, 0, 0, 0])
+    yaw_map = np.array([0, 0, 0, 0, 0])
     for i in range(200, 500, 5):
-            robot.drive(int(i), int(i))
+            robot.state.drive(int(i), int(i))
             sleep(1)
             robot.update_params()
             yaw_map = np.vstack((yaw_map, np.array([i, i, robot.Dx, robot.Dy, robot.yaw])))
@@ -338,8 +371,8 @@ def map_robot_wheels_commends_to_speed():
 
 def main():
     # yaw_map = map_robot_wheels_commends_to_yaw()
-    # seed_map = map_robot_wheels_commends_to_speed()
     # np.savetxt("yaw_map.csv", yaw_map, delimiter=",")
+    # speed_map = map_robot_wheels_commends_to_speed()
     # np.savetxt("speed_map.csv", speed_map, delimiter=",")
 
 
@@ -363,7 +396,10 @@ def main():
     while preform_motion_profile():
         recalculate_route(robot.x, robot.y)
 
-    robot.plot_actual_motion()
+    # robot.plot_actual_motion()
+    a = "robot" + str(time()) + ".csv"
+    np.savetxt("robot -" + str(time()) + ".csv", robot.csv_file, delimiter=",")
+    print('FINISHED!!!')
     robot.state.terminate()
 
 
