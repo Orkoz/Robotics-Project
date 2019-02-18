@@ -3,10 +3,6 @@ import numpy as np
 import Queue
 import math
 
-from IPython.utils.tests.test_wildcard import q
-
-show_animation = True
-
 
 class Node:
 
@@ -17,6 +13,7 @@ class Node:
         self.next_x = -1
         self.next_y = -1
         self.prev = Queue.PriorityQueue()
+        self.yaw = 0
 
     def __str__(self):
         return str(self.x) + "," + str(self.y) + "," + str(self.val) + "," + str(self.next_x) + "," + str(self.next_y)
@@ -35,6 +32,8 @@ class NodeMap:
         self.size_y = calc_map_size(max_y, min_y, reso)
         self.gx, self.gy = world_to_map(self, world_gx, world_gy)
         self.q_obs = Queue.PriorityQueue()
+        self.x_route = []
+        self.y_route = []
 
 
 class Cord:
@@ -114,8 +113,21 @@ def print_node_mat(node_map):
     plt.show()
 
 
+def print_arrow_mat(node_map):
+    print_node_map(node_map, node_map.x_route[0], node_map.y_route[0])
+    map_node = node_map.map
+    size_x = node_map.size_x
+    size_y = node_map.size_y
+    for i in range(size_x):
+        for j in range(size_y):
+            dx = 0.5 * np.cos(map_node[i, j].yaw)
+            dy = 0.5 * np.sin(map_node[i, j].yaw)
+            plt.arrow(i, j, dx, dy, width=0.1)
+    plt.show()
+
+
 def wave_front(node_map):
-    # initilaze
+    # initialize
     q = Queue.Queue()
     start = Node(0, 0, -2.0)
     finish = Node(0, 0, -3.0)
@@ -227,27 +239,29 @@ def existing_route(node_map, robot_x, robot_y):
 def find_route(node_map, robot_x, robot_y):
     temp_x, temp_y = world_to_map(node_map, robot_x, robot_y)
     val = node_map.map[temp_x, temp_y].val
-    x = []
-    y = []
+    x_map = []
+    y_map = []
     x_world = []
     y_world = []
     if existing_route(node_map, temp_x, temp_y): # TODO Protect from robot placement on obstacle
-        x.append(temp_x)
-        y.append(temp_y)
+        x_map.append(temp_x)
+        y_map.append(temp_y)
         x_world.append(robot_x)
         y_world.append(robot_y)
         while val != 2:
-            next_x = node_map.map[x[-1], y[-1]].next_x
-            next_y = node_map.map[x[-1], y[-1]].next_y
-            x.append(next_x)
-            y.append(next_y)
+            next_x = node_map.map[x_map[-1], y_map[-1]].next_x
+            next_y = node_map.map[x_map[-1], y_map[-1]].next_y
+            x_map.append(next_x)
+            y_map.append(next_y)
             xx, yy = map_to_world(node_map, next_x, next_y)
             x_world.append(xx)
             y_world.append(yy)
             val = node_map.map[next_x, next_y].val
+        node_map.x_route = x_map
+        node_map.y_route = y_map
 
         print_node_map(node_map, temp_x, temp_y)
-        plt.plot(x, y, "or")
+        plt.plot(x_map, y_map, "or")
         plt.show()
     return x_world, x_world
 
@@ -268,10 +282,10 @@ def check_new_obstacle(node_map, world_obs_x, world_obs_y):
     obs_x, obs_y = world_to_map(node_map, world_obs_x, world_obs_y)
     gx = node_map.gx
     gy = node_map.gy
-    val = int(round(node_map.map[obs_x, obs_y].val))
     if obs_x < 0 or obs_y < 0 or obs_x >= node_map.size_x or obs_y >= node_map.size_y:  # out of map
         return -1  # out of boundary
-    elif val == 1:  # old obstacle
+    val = int(round(node_map.map[obs_x, obs_y].val))
+    if val == 1:  # old obstacle
         if node_map.q_obs.empty():  # There were no new walls
             return 0  # old obstacle
         else:  # There were new walls
@@ -323,6 +337,43 @@ def restart_map(node_map):
     # print_node_mat(node_map)
 
 
+def calc_yaw_all_map(node_map):
+    size_x = node_map.size_x
+    size_y = node_map.size_y
+    for i in range(size_x):
+        for j in range(size_y):
+            if node_map.map[i, j].val == 1:
+                next_idx = 0
+                yaw = calc_yaw(node_map, i, j, next_idx)
+            else:
+                next_idx = 3
+                yaw = calc_yaw(node_map, i, j, next_idx)
+            node_map.map[i, j].yaw = yaw
+
+
+def calc_yaw(node_map, loc_x, loc_y, next_idx):
+    x, y = find_closest_node_in_route(node_map, loc_x, loc_y, next_idx)
+    yaw = (np.arctan2(y - loc_y, x - loc_x))
+    return yaw
+
+
+def find_closest_node_in_route(node_map, loc_x, loc_y, next_idx):
+    x_map = node_map.x_route
+    y_map = node_map.y_route
+    # Search nearest point index
+    dx = [loc_x - icx for icx in x_map]
+    dy = [loc_y - icy for icy in y_map]
+    d = [np.sqrt(idx ** 2 + idy ** 2) for (idx, idy) in zip(dx, dy)]
+    closest_in_route = min(d)
+    closest_idx_in_route = d.index(closest_in_route)
+    direction_idx = closest_idx_in_route + next_idx
+    if direction_idx >= (len(x_map) - 1):
+        direction_idx = (len(x_map) - 1)
+    x = x_map[direction_idx]
+    y = y_map[direction_idx]
+    return x, y
+
+
 def simulate(min_x, max_x, min_y, max_y, world_gx, world_gy, world_sx, world_sy, reso):
     # Creates the map
     node_map = NodeMap(min_x, max_x, min_y, max_y, world_gx, world_gy, reso)
@@ -339,14 +390,21 @@ def simulate(min_x, max_x, min_y, max_y, world_gx, world_gy, world_sx, world_sy,
     x, y = find_route(node_map, world_sx, world_sy)
     if not(len(x)):
         print('There is no route - stop all')
+    # calc yaw for every node in themap
+    calc_yaw_all_map(node_map)
+    print_arrow_mat(node_map)
     # Start to drive
         # TODO
     # Adding obstacles along the way
     sim_add_obstacles(node_map, 2)
     # Find_route
-    x, y = find_route(node_map, 25, world_sy)
+    # x, y = find_route(node_map, 25, world_sy)
+    x, y = find_route(node_map, world_sx, world_sy)
     if not(len(x)):
         print('There is no route - stop all')
+    # calc yaw for every node in themap
+    calc_yaw_all_map(node_map)
+    print_arrow_mat(node_map)
     # Start to drive
     # TODO
 
@@ -354,12 +412,29 @@ def simulate(min_x, max_x, min_y, max_y, world_gx, world_gy, world_sx, world_sy,
 def sim_add_obstacles(node_map, time):
     if time == 1:
         # add obstacles one way
-        node_map.map[3, 8].val = 1.0
-        node_map.map[4, 8].val = 1.0
-        node_map.map[5, 8].val = 1.0
-        node_map.map[6, 8].val = 1.0
-        node_map.map[7, 8].val = 1.0
-        node_map.map[8, 8].val = 1.0
+        # node_map.map[3, 8].val = 1.0
+        # node_map.map[4, 8].val = 1.0
+        # node_map.map[5, 8].val = 1.0
+        # node_map.map[6, 8].val = 1.0
+        # node_map.map[7, 8].val = 1.0
+        # node_map.map[8, 8].val = 1.0
+
+        # world_obs_x = 3*5 # TODO BAG
+        # world_obs_y = 8*5 # TODO BAG
+
+        # world_obs_x = 2 * 5 # TODO BAG
+        # world_obs_y = 7 * 5 - 25 # TODO BAG
+
+        world_obs_x = 4 * 5
+        world_obs_y = 7 * 5 - 25
+
+        a = check_new_obstacle(node_map, world_obs_x, world_obs_y)
+        a = check_new_obstacle(node_map, world_obs_x+5, world_obs_y)
+        a = check_new_obstacle(node_map, world_obs_x+10, world_obs_y)
+        a = check_new_obstacle(node_map, world_obs_x + 15, world_obs_y)
+        a = check_new_obstacle(node_map, world_obs_x + 20, world_obs_y)
+        a = check_new_obstacle(node_map, world_obs_x + 25, world_obs_y)
+
     elif time == 2:
         # add obstacles another way
         # TODO need to write in loop
@@ -391,7 +466,7 @@ if __name__ == '__main__':
     world_gx = 43.0  # [cm]
     world_gy = 15.0  # [cm]
     world_sx = 0.0
-    world_sy = 15.0
+    world_sy = -15.0
     reso = 5        # [cm]
     simulate(min_x, max_x, min_y, max_y, world_gx, world_gy, world_sx, world_sy, reso)
 
