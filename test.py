@@ -1,6 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from time import sleep
 import Queue
+from time import time
 #
 #
 # class Cord:
@@ -44,14 +46,22 @@ import Queue
 #
 # plt.show()
 
-temp_x = 1
-temp_y = 2
-x = []
-y = []
-while True:
-    x.append(temp_x)
-    y.append(temp_x+1)
-    temp_x += 1
-    a = x[-1]
-    print(a)
-
+a = "robot " + str(time()) + " .csv"
+print(a)
+# temp_x = 1
+# temp_y = 2
+# x = []
+# y = []
+# plt.ion()
+#
+# while True:
+#     x.append(temp_x)
+#     y.append(temp_x+1)
+#     plt.plot(x, y)
+#     plt.show(block=False)
+#     sleep(2)
+#     plt.close()
+#     temp_x += 1
+#     a = x[-1]
+#     print(a)
+#
