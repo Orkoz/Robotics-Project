@@ -20,6 +20,7 @@ sleep_time = 0.5  # [sec]
 velocity_gain = 700  # [wheel power]
 velocity_offset = 330  # [wheel power]
 next_idx = 1
+pass_obstacle_timeout = 10  # [sec]
 
 
 class Robot(object):
@@ -237,7 +238,7 @@ def preform_motion_profile():
     target_idx = calc_target_index()
 
     reached_destination = (abs(robot.x - profile.X[-1]) < final_position_delta) and (abs(robot.y - profile.Y[-1]) < final_position_delta)
-    flag = check_position() and (profile.last_idx > target_idx) and not reached_destination
+    flag = check_position(0) and (profile.last_idx > target_idx) and not reached_destination
 
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1)
@@ -248,7 +249,7 @@ def preform_motion_profile():
         robot.drive(15*delta_yaw, coursing_velocity)
 
         reached_destination = (abs(robot.x - profile.X[-1]) < final_position_delta) and (abs(robot.y - profile.Y[-1]) < final_position_delta)
-        flag = check_position() and (profile.last_idx > target_idx) and not reached_destination
+        flag = check_position(0) and (profile.last_idx > target_idx) and not reached_destination
 
         ax.clear()
         ax.plot(robot.X, robot.Y, label="course")
@@ -264,22 +265,25 @@ def preform_motion_profile():
 
     if reached_destination:
         return 0
-    elif (not check_position()) or (last_idx <= target_idx):
+    elif (not check_position(0)) or (profile.last_idx <= target_idx):
         return 1
 
 
-def check_position():
+def check_position(new_obstacle_mode):
     # handling new obstacle.
     at0, at45L, at45R = facing_new_obstacle()
-    if at0 or at45L or at45L:
+    if (at0 or at45L or at45L) and (not new_obstacle_mode):
         robot.drive(0, 0)
         pass_obstacle()
+        return 0
+
+    if (at0 == 0 or at45L == 0 or at45L == 0) and new_obstacle_mode:
+        robot.drive(0, 0)
         return 0
 
     # handling the situation the we are too close to an obstacle.
     if are_we_too_close():
         robot.drive(0, 0)
-        drive_back_and_recalculate_route()
         return 0
 
     return 1
@@ -289,10 +293,6 @@ def are_we_too_close():
     return (robot.Obs0 <= Closeness0 and robot.Obs0 != -1) or \
            (robot.Obs45L <= Closeness45 and robot.Obs45L != -1) or \
            (robot.Obs45R <= Closeness45 and robot.Obs45R != -1)
-
-
-def drive_back_and_recalculate_route():
-    robot.drive(0, -700)
 
 
 def facing_new_obstacle():
@@ -324,11 +324,12 @@ def pass_obstacle():
 
 
 def drive_parallel_to_obstacle():
-    while robot.Obs45L != 0:
+    start_passing_time = time()
+    dt = time() - start_passing_time
+    while robot.Obs45L != 0 and check_position(1) and (dt < pass_obstacle_timeout):
         robot.drive(0, coursing_velocity)
         position_the_robot_at_90_degree_to_obstacle()
-        if check_position():
-            recalculate_route(robot.x, robot.y)
+        dt = time() - start_passing_time
 
 
 def position_the_robot_at_90_degree_to_obstacle():
@@ -347,6 +348,13 @@ def recalculate_route(x_int, y_int):
     x = [xi + x_int for xi in x]
     y = [yi + y_int for yi in y]
 
+    X, Y, yaw, ck, s = create_motion_profile(x, y)
+    v = create_target_velocity_profile(ck, s)
+    profile.update_profile(X, Y, yaw, v, s)
+    profile.plot_motion_profile(x, y)
+
+
+def initialize_motion(x, y):
     X, Y, yaw, ck, s = create_motion_profile(x, y)
     v = create_target_velocity_profile(ck, s)
     profile.update_profile(X, Y, yaw, v, s)
