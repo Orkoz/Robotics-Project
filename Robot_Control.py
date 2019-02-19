@@ -4,20 +4,24 @@ import cubic_spline_planner
 from time import time
 from time import sleep
 import matplotlib.pyplot as plt
+from alg import world_to_map
+from alg import distance_to_goal
+import threading
+from alg import check_new_obstacle
 
 # Variables
 f = 1
 Closeness0 = 45.0  # [cm]
 Closeness45 = 45.0  # [cm]
-Kp = 1.0  # speed proportional gain
+Kp = 3.0  # speed proportional gain
 ds = 10  # [cm] Quantization of the motion
-k = 0.5  # control gain
-initial_yaw_delta = 10.0  # [deg]
+k = 0.01  # control gain
+initial_yaw_delta = 7.0  # [deg]
 final_position_delta = 10.0  # [cm]
-sweeping_angle = 375.0  # [cm]
-coursing_velocity = 400.0  # [wheel power]
+sweeping_angle = 365.0  # [cm]
+coursing_velocity = 500.0  # [wheel power]
 stop_velocity = -300  # [wheel power]
-sleep_time = 0.23  # [sec]
+sleep_time = 0.5  # [sec]
 velocity_gain = 700  # [wheel power]
 velocity_offset = 330  # [wheel power]
 next_idx = 1
@@ -47,11 +51,12 @@ class Robot(object):
         self.T = [0]
         self.csv_file = np.array([self.x, self.y, self.Dx, self.Dy, self.yaw, self.v, self.dt])
         sleep(1)
-        self.update_params()
+        self.update_params_thread = threading.Thread(target=self.update_params)
+        self.update_params_thread.start()
         sleep(1)
 
     def update_params(self):
-        x, y, self.Dx, self.Dy, self.Obs45L, self.Obs0, self.Obs45R = self.state.sense()
+        x, y, self.Dx, self.Dy, self.Obs45R, self.Obs0, self.Obs45L = self.state.sense()
         # self.yaw = (np.arcsin(self.Dy)/abs(np.arcsin(self.Dy))) * np.arccos(self.Dx)
         self.yaw = np.rad2deg(np.arctan2(self.Dy, self.Dx))
         self.dt = time() - self.time_stamp
@@ -109,14 +114,16 @@ class MotionProfile(object):
         self.v = []
         self.s = []
         self.last_idx = 0
+        self.yaw_mat = np.array([])
 
-    def update_profile(self, X, Y, yaw, v, s):
+    def update_profile(self, X, Y, yaw, v, s, yaw_mat):
         self.X = X
         self.Y = Y
         self.yaw = yaw
         self.v = v
         self.s = s
         self.last_idx = len(profile.X) - 1
+        self.yaw_mat = yaw_mat
 
     def plot_motion_profile(self, x, y):
         plt.subplots(1)
@@ -184,17 +191,24 @@ def stanley_control(last_target_idx):
 
     # theta_d corrects the cross track error
     # theta_d = np.arctan2(k * error_front_axle, robot.v)
-    x_hat = profile.X[current_target_idx]+k*np.cos(profile.yaw[current_target_idx]) - robot.x
-    y_hat = profile.Y[current_target_idx]+k*np.sin(profile.yaw[current_target_idx]) - robot.y
-    theta_d = np.arctan2(y_hat, x_hat) * 10
+    # x_hat = profile.X[current_target_idx]+k*np.cos(profile.yaw[current_target_idx]) - robot.x
+    # y_hat = profile.Y[current_target_idx]+k*np.sin(profile.yaw[current_target_idx]) - robot.y
+    # theta_d = np.arctan2(y_hat, x_hat)
+    #
+    # print('theta_e: ' + str(theta_e))
+    # print('theta_d: ' + str(theta_d))
 
-    print('theta_e: ' + str(theta_e))
-    print('theta_d: ' + str(theta_d))
     # Steering control
-    delta = theta_e - theta_d
+    # delta = theta_e - theta_d
+    # return delta, current_target_idx
+    x_map, y_map = world_to_map(robot.x, robot.y)
+    theta_d = (np.rad2deg(profile.yaw_mat[x_map, y_map]) - robot.yaw)
+    print('thetad: ' + str(theta_d))
+    if theta_d > 45:
+        face_yaw(np.rad2deg(profile.yaw_mat[x_map, y_map]))
+        theta_d = (np.rad2deg(profile.yaw_mat[x_map, y_map]) - robot.yaw)
 
-    return delta, current_target_idx
-
+    return theta_d*Kp, current_target_idx
 
 def calc_target_index():
     # Calc front axle position
@@ -223,11 +237,11 @@ def pid_control(target, current):
     return Kp * (target - current)
 
 
-def face_initial_yaw():
-    initial_yaw = profile.yaw[0]
+def face_yaw(initial_yaw):
     d_yaw = robot.yaw - initial_yaw
-    print(d_yaw)
     while abs(robot.yaw - initial_yaw) > initial_yaw_delta:
+        # if distance_to_goal(robot.x, robot.y) < final_position_delta ** 2:
+        #     return
         if robot.yaw - initial_yaw < 0:
             robot.drive(sweeping_angle, 0)
         else:
@@ -235,19 +249,23 @@ def face_initial_yaw():
 
 
 def preform_motion_profile():
-    face_initial_yaw()
+    face_yaw(profile.yaw[0])
     target_idx = calc_target_index()
 
-    reached_destination = (abs(robot.x - profile.X[-1]) < final_position_delta) and (abs(robot.y - profile.Y[-1]) < final_position_delta)
-    flag = check_position(0) and (profile.last_idx > target_idx) and not reached_destination
+    d = distance_to_goal(robot.x, robot.y)
+    reached_destination = d < final_position_delta ** 2
+    check_position_flag = check_position(0)
+    flag = check_position_flag and not reached_destination
 
     while flag:
         # a = pid_control(profile.v[target_idx], robot.v)
         delta_yaw, target_idx = stanley_control(target_idx)
-        robot.drive(15*delta_yaw, coursing_velocity)
+        robot.drive(delta_yaw, coursing_velocity)
 
-        reached_destination = (abs(robot.x - profile.X[-1]) < final_position_delta) and (abs(robot.y - profile.Y[-1]) < final_position_delta)
-        flag = check_position(0) and (profile.last_idx > target_idx) and not reached_destination
+        d = distance_to_goal(robot.x, robot.y)
+        reached_destination = d < final_position_delta**2
+        check_position_flag = check_position(0)
+        flag = check_position_flag and not reached_destination
 
         plt.plot(robot.X, robot.Y, label="course")
         plt.plot(profile.X, profile.Y, "r", label="spline")
@@ -262,7 +280,7 @@ def preform_motion_profile():
 
     if reached_destination:
         return 0
-    elif (not check_position(0)) or (profile.last_idx <= target_idx):
+    elif not check_position_flag:
         return 1
 
 
@@ -274,7 +292,11 @@ def check_position(new_obstacle_mode):
         pass_obstacle()
         return 0
 
-    if (at0 == 0 or at45L == 0 or at45L == 0) and new_obstacle_mode:
+    if (at0 == 0 and at45L == 0 and at45R == 0) and new_obstacle_mode:
+        robot.drive(0, stop_velocity)
+        return 0
+
+    if (at0 == 2 or at45L == 2 or at45R == 2) and new_obstacle_mode:
         robot.drive(0, stop_velocity)
         return 0
 
@@ -295,42 +317,48 @@ def are_we_too_close():
 def facing_new_obstacle():
     at0 = at45L = at45R = 0
 
-    if robot.Obs0 != 0:
-        at0 = check_obstacle(robot.x, robot.y, robot.yaw, robot.Obs0, 0)
-    if robot.Obs45L != 0:
-        at45L = check_obstacle(robot.x, robot.y, robot.yaw, robot.Obs45L, 45)
-    if robot.Obs45R != 0:
-        at45R = check_obstacle(robot.x, robot.y, robot.yaw, robot.Obs45R, -45)
+    if robot.Obs0 != -1:
+        if check_obstacle(robot.x, robot.y, robot.yaw, robot.Obs0, 0):
+            at0 = 1
+        else:
+            at0 = 2
+    if robot.Obs45L != -1:
+        if check_obstacle(robot.x, robot.y, robot.yaw, robot.Obs45L, 45):
+            at45L = 1
+        else:
+            at45L = 2
+    if robot.Obs45R != -1:
+        if check_obstacle(robot.x, robot.y, robot.yaw, robot.Obs45R, -45):
+            at45R = 1
+        else:
+            at45R = 2
 
     return at0, at45L, at45R
 
 
 def check_obstacle(robot_x, robot_y, robot_angle, obs_dis, obs_angle):
-    obs_x = robot_x + obs_dis*np.cos(robot_angle + obs_angle)
-    obs_y = robot_y + obs_dis*np.sin(robot_angle + obs_angle)
-    return 0  # TODO add peleg function to map a new obstacle
+    obs_x = robot_x + obs_dis*np.cos(np.deg2rad(robot_angle + obs_angle))
+    obs_y = robot_y + obs_dis*np.sin(np.deg2rad(robot_angle + obs_angle))
+    return check_new_obstacle(obs_x, obs_y)
 
 
 def pass_obstacle():
     position_the_robot_at_90_degree_to_obstacle()
     drive_parallel_to_obstacle()
 
-    robot.drive(0, coursing_velocity)
-    robot.drive(90, stop_velocity)
-    robot.drive(0, coursing_velocity)
-
 
 def drive_parallel_to_obstacle():
     start_passing_time = time()
     dt = time() - start_passing_time
-    while robot.Obs45L != 0 and check_position(1) and (dt < pass_obstacle_timeout):
+    flag = check_position(1)
+    while robot.Obs45L != -1 and flag and (dt < pass_obstacle_timeout):
         robot.drive(0, coursing_velocity)
         position_the_robot_at_90_degree_to_obstacle()
         dt = time() - start_passing_time
 
 
 def position_the_robot_at_90_degree_to_obstacle():
-    while robot.Obs0 != 0:
+    while robot.Obs0 != -1:
         robot.drive(sweeping_angle, 0)
         # TODO add peleg function to map a new obstacle
 
@@ -351,10 +379,10 @@ def recalculate_route(x_int, y_int):
     profile.plot_motion_profile(x, y)
 
 
-def initialize_motion(x, y):
+def initialize_motion(x, y, yaw_mat):
     X, Y, yaw, ck, s = create_motion_profile(x, y)
     v = create_target_velocity_profile(ck, s)
-    profile.update_profile(X, Y, yaw, v, s)
+    profile.update_profile(X, Y, yaw, v, s, yaw_mat)
     profile.plot_motion_profile(x, y)
 
 

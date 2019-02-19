@@ -117,7 +117,7 @@ def kbd():
 def test():
     global done
     global cmd
-    r = RClient("192.168.1.157", 2777)
+    r = RClient("192.168.1.153", 2777)
     counter = 0
     if r.connect():
         kbd_thread=threading.Thread(target=kbd)
@@ -132,10 +132,10 @@ def test():
                         r.drive(int(s[0]),int(s[1]))
                     except ValueError:
                         print "Invalid speeds"
-            time.sleep(0.1)
+            time.sleep(1)
             counter += 1
             # if (counter%10)==0:
-            # print r.sense()
+            print r.sense()
         r.terminate()
         print "Done"
         kbd_thread.join()
@@ -159,4 +159,4 @@ def test2():
     r.terminate()
 	
 if __name__=='__main__':
-    test2()
+    test()
