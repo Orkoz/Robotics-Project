@@ -310,8 +310,9 @@ def add_connected(queue, node):
 def calculate_route(world_robot_x, world_robot_y):
     add_new_obstacle()
     x_world, y_world = find_route(world_robot_x, world_robot_y)
-    # TODO if back empty
-    yaw_mat = calc_yaw_all_map()
+    a = len(x_world)
+    if len(x_world):
+        yaw_mat = calc_yaw_all_map()
     return x_world, y_world, yaw_mat
 
 
