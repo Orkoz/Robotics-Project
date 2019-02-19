@@ -3,6 +3,25 @@ import numpy as np
 import Queue
 import math
 
+# Global
+# min_x = -200.0     # [cm]
+# max_x = 200.0  # [cm]
+# min_y = -280.0  # [cm]
+# max_y = 50   # [cm]
+world_gx = 9  # [cm]
+world_gy = 5  # [cm]
+# world_gx = -130 # [cm]
+# world_gy = -155  # [cm]
+min_x = 0.0     # [cm]
+max_x = 10.0  # [cm]
+min_y = 0.0  # [cm]
+max_y = 10   # [cm]
+reso = 1        # [cm]
+# obs_vec_x = [-30, -30, -30, -30, -30, -30]
+# obs_vec_y = [-160, -150, -140, -130, -120]
+obs_vec_x = []
+obs_vec_y = []
+
 
 # Class
 class Node:
@@ -51,22 +70,6 @@ class Cord:
         return str(self.x) + "," + str(self.y) + "," + str(self.priority)
 
 
-# Global
-min_x = -200.0     # [cm]
-max_x = 200.0  # [cm]
-min_y = -280.0  # [cm]
-max_y = 50   # [cm]
-world_gx = 0  # [cm]
-world_gy = 0  # [cm]
-# world_gx = -130 # [cm]
-# world_gy = -155  # [cm]
-reso = 5        # [cm]
-# obs_vec_x = [-30, -30, -30, -30, -30, -30]
-# obs_vec_y = [-160, -150, -140, -130, -120]
-obs_vec_x = []
-obs_vec_y = []
-
-
 # Auxiliary functions
 def calc_map_size(max_val, min_val, resolution):
     return int(round((max_val - min_val) / resolution)) + 2
@@ -86,6 +89,10 @@ def map_to_world(point_x, point_y):
 
 def distance_to_goal(loc_x, loc_y):
     return (loc_x - world_gx)**2 + (loc_y - world_gy)**2
+
+
+def distance_to_goal_in_map(loc_x, loc_y, gx, gy):
+    return (loc_x - gx)**2 + (loc_y - gy)**2
 
 
 # print functions
@@ -252,15 +259,16 @@ def find_next(loc_x, loc_y):
                 if temp_val >= 2 and not(i == loc_x and j == loc_y):  # only free space that all ready have a number and not itself
                     if min_val >= temp_val:  # smallest val
                         if not(find_circle(loc_x, loc_y, i, j)):  # Next comes to current "Ping pong"
-                            if min_dis >= distance_to_goal(i, j) or temp_val < min_val:  # closest to goal at lest one if exist
-                                min_dis = distance_to_goal(i, j)
+                            temp_dis = distance_to_goal_in_map(i, j, gx, gy)
+                            if min_dis >=  temp_dis or temp_val < min_val:  # closest to goal at lest one if exist
+                                min_dis = temp_dis
                                 min_val = temp_val
                                 node_map.map[loc_x, loc_y].next_x = i
                                 node_map.map[loc_x, loc_y].next_y = j
     next_x = node_map.map[loc_x, loc_y].next_x
     next_y = node_map.map[loc_x, loc_y].next_y
     if next_x != -1:
-        node_map.map[next_x, next_y].prev.put(Cord(distance_to_goal(loc_x, loc_y), loc_x, loc_y))
+        node_map.map[next_x, next_y].prev.put(Cord(distance_to_goal_in_map(loc_x, loc_y, gx, gy), loc_x, loc_y))
         # print("(" + str(loc_x) + "," + str(loc_y) + ") v = " + str(val) + " to: (" +
         #       str(next_x) + "," + str(next_y) + ") v = " + str(node_map.map[next_x, next_y].val))
         return 1  # There is a continuation
@@ -437,7 +445,7 @@ def fictitious_magnification(obs_x, obs_y, gx, gy):
                     val = node_map.map[i, j].val
                     if not(val == -10.0 or val == 1):  # the node is not in the queue and not a wall
                         node_map.map[i, j].val = -10.0  # the node is put inside the queue
-                        node_map.q_obs.put(Cord(distance_to_goal(i, j), i, j))
+                        node_map.q_obs.put(Cord(distance_to_goal_in_map(i, j, gx, gy), i, j))
 
 
 node_map = NodeMap(min_x, max_x, min_y, max_y, world_gx, world_gy, reso)
@@ -446,24 +454,15 @@ node_map = NodeMap(min_x, max_x, min_y, max_y, world_gx, world_gy, reso)
 # Simulate
 def simulate():
     # parameters
-    # min_x = 0.0     # [cm]
-    # max_x = 100.0    # [cm]
-    # min_y = -50.0   # [cm]
-    # max_y = 50.0    # [cm]
-    # world_gx = 43.0  # [cm]
-    # world_gy = 15.0  # [cm]
-    world_sx = -130.0
-    world_sy = -155.0
-    # reso = 10        # [cm]
-    # obs_vec_x = []
-    # obs_vec_y = []
+    world_sx = 1.0
+    world_sy = 5.0
 
     # run
     create_map()
     x_world, y_world, yaw_mat = calculate_route(world_sx, world_sy)
     obs = check_new_obstacle
     print_arrow_mat()
-    print_arrow_yaw_mat(yaw_mat)
+    print_node_mat()
 
 
 
