@@ -7,8 +7,8 @@ import matplotlib.pyplot as plt
 
 # Variables
 f = 1
-Closeness0 = 10.0  # [cm]
-Closeness45 = 7.0  # [cm]
+Closeness0 = 45.0  # [cm]
+Closeness45 = 45.0  # [cm]
 Kp = 1.0  # speed proportional gain
 ds = 10  # [cm] Quantization of the motion
 k = 0.5  # control gain
@@ -16,7 +16,8 @@ initial_yaw_delta = 10.0  # [deg]
 final_position_delta = 10.0  # [cm]
 sweeping_angle = 375.0  # [cm]
 coursing_velocity = 400.0  # [wheel power]
-sleep_time = 0.5  # [sec]
+stop_velocity = -300  # [wheel power]
+sleep_time = 0.23  # [sec]
 velocity_gain = 700  # [wheel power]
 velocity_offset = 330  # [wheel power]
 next_idx = 1
@@ -50,7 +51,7 @@ class Robot(object):
         sleep(1)
 
     def update_params(self):
-        x, y, self.Dx, self.Dy, self.Obs0, self.Obs45L, self.Obs45R = self.state.sense()
+        x, y, self.Dx, self.Dy, self.Obs45L, self.Obs0, self.Obs45R = self.state.sense()
         # self.yaw = (np.arcsin(self.Dy)/abs(np.arcsin(self.Dy))) * np.arccos(self.Dx)
         self.yaw = np.rad2deg(np.arctan2(self.Dy, self.Dx))
         self.dt = time() - self.time_stamp
@@ -240,9 +241,6 @@ def preform_motion_profile():
     reached_destination = (abs(robot.x - profile.X[-1]) < final_position_delta) and (abs(robot.y - profile.Y[-1]) < final_position_delta)
     flag = check_position(0) and (profile.last_idx > target_idx) and not reached_destination
 
-    fig = plt.figure()
-    ax = fig.add_subplot(1, 1, 1)
-
     while flag:
         # a = pid_control(profile.v[target_idx], robot.v)
         delta_yaw, target_idx = stanley_control(target_idx)
@@ -251,17 +249,16 @@ def preform_motion_profile():
         reached_destination = (abs(robot.x - profile.X[-1]) < final_position_delta) and (abs(robot.y - profile.Y[-1]) < final_position_delta)
         flag = check_position(0) and (profile.last_idx > target_idx) and not reached_destination
 
-        ax.clear()
-        ax.plot(robot.X, robot.Y, label="course")
-        ax.plot(profile.X, profile.Y, "r", label="spline")
-        ax.plot(profile.X, profile.Y, ".b", label="spline")
+        plt.plot(robot.X, robot.Y, label="course")
+        plt.plot(profile.X, profile.Y, "r", label="spline")
+        plt.plot(profile.X, profile.Y, ".b", label="spline")
         plt.legend()
         plt.title('actual X-Y coordinates')
         plt.xlabel("x[m]")
         plt.ylabel("y[m]")
         plt.axis("equal")
         plt.grid(True)
-        fig.show()
+        plt.show()
 
     if reached_destination:
         return 0
@@ -273,17 +270,17 @@ def check_position(new_obstacle_mode):
     # handling new obstacle.
     at0, at45L, at45R = facing_new_obstacle()
     if (at0 or at45L or at45L) and (not new_obstacle_mode):
-        robot.drive(0, 0)
+        robot.drive(0, stop_velocity)
         pass_obstacle()
         return 0
 
     if (at0 == 0 or at45L == 0 or at45L == 0) and new_obstacle_mode:
-        robot.drive(0, 0)
+        robot.drive(0, stop_velocity)
         return 0
 
     # handling the situation the we are too close to an obstacle.
     if are_we_too_close():
-        robot.drive(0, 0)
+        robot.drive(0, stop_velocity)
         return 0
 
     return 1
@@ -319,7 +316,7 @@ def pass_obstacle():
     drive_parallel_to_obstacle()
 
     robot.drive(0, coursing_velocity)
-    robot.drive(90, 0)
+    robot.drive(90, stop_velocity)
     robot.drive(0, coursing_velocity)
 
 
@@ -383,20 +380,67 @@ def map_robot_wheels_commends_to_speed():
     return yaw_map
 
 
+def brakes_test():
+    const = -1000
+    stop = 300 * np.sign(const) * -1
+
+    robot.drive(0, const)
+    print(robot.Obs0, robot.Obs45L, robot.Obs45R, robot.v)
+    if not check_position(0):
+        print("stop!")
+        return
+    robot.drive(0, const)
+    print(robot.Obs0, robot.Obs45L, robot.Obs45R, robot.v)
+    if not check_position(0):
+        print("stop!")
+        return
+    robot.drive(0, const)
+    print(robot.Obs0, robot.Obs45L, robot.Obs45R, robot.v)
+    if not check_position(0):
+        print("stop!")
+        return
+    robot.drive(0, const)
+    print(robot.Obs0, robot.Obs45L, robot.Obs45R, robot.v)
+    if not check_position(0):
+        print("stop!")
+        return
+    robot.drive(0, const)
+    print(robot.Obs0, robot.Obs45L, robot.Obs45R, robot.v)
+    if not check_position(0):
+        print("stop!")
+        return
+    robot.drive(0, const)
+    print(robot.Obs0, robot.Obs45L, robot.Obs45R, robot.v)
+    if not check_position(0):
+        print("stop!")
+        return
+    robot.drive(0, stop)
+    print(robot.Obs0, robot.Obs45L, robot.Obs45R, robot.v)
+
+    # robot.drive(0, const)
+    # robot.drive(0, const)
+    # robot.drive(0, const)
+    # robot.drive(0, const)
+    # robot.drive(0, const)
+    # robot.drive(0, const)
+    # robot.drive(0, stop)
+
 def main():
+    brakes_test()
+    print(robot.Obs0, robot.Obs45L, robot.Obs45R, robot.v)
 
     # yaw_map = map_robot_wheels_commends_to_yaw()
     # np.savetxt("yaw_map.csv", yaw_map, delimiter=",")
     # speed_map = map_robot_wheels_commends_to_speed()
     # np.savetxt("speed_map.csv", speed_map, delimiter=",")
 
-    recalculate_route(robot.x, robot.y)
-
-    while preform_motion_profile():
-        recalculate_route(robot.x, robot.y)
-
-    robot.plot_actual_motion()
-    print('FINISHED!!!')
+    # recalculate_route(robot.x, robot.y)
+    #
+    # while preform_motion_profile():
+    #     recalculate_route(robot.x, robot.y)
+    #
+    # robot.plot_actual_motion()
+    # print('FINISHED!!!')
     robot.state.terminate()
     return 0
 
