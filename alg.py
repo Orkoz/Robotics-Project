@@ -116,10 +116,23 @@ def print_arrow_mat(node_map):
     plt.show()
 
 
+def print_arrow_yaw_mat(node_map, yaw_mat):
+    print_node_map(node_map, node_map.x_route[0], node_map.y_route[0])
+    size_x = node_map.size_x
+    size_y = node_map.size_y
+    for i in range(size_x):
+        for j in range(size_y):
+            dx = 0.5 * np.cos(yaw_mat[i, j])
+            dy = 0.5 * np.sin(yaw_mat[i, j])
+            plt.arrow(i, j, dx, dy, width=0.1)
+    plt.show()
+
+
+
 # Create the map - 1 MODEL
 def create_map(min_x, max_x, min_y, max_y, world_gx, world_gy, reso, obs_vec_x, obs_vec_y):
     # Creates the map
-    node_map = NodeMap(min_x, max_x, min_y, max_y, world_gx, world_gy, reso, q_obs)
+    node_map = NodeMap(min_x, max_x, min_y, max_y, world_gx, world_gy, reso)
     # Constructive the map
     construct_node_map(node_map)
     # initialize obstacle queue
@@ -273,8 +286,9 @@ def add_connected(node_map, queue, node):
 # Calculate_route - 2 MODEL
 def calculate_route(node_map, world_robot_x, world_robot_y):
     add_new_obstacle(node_map)
-    find_route(node_map, world_robot_x, world_robot_y)
-    calc_yaw_all_map
+    x_world, y_world = find_route(node_map, world_robot_x, world_robot_y)
+    yaw_mat = calc_yaw_all_map(node_map)
+    return x_world, y_world, yaw_mat
 
 
 # find route - 2.1 MODEL
@@ -305,7 +319,7 @@ def find_route(node_map, world_robot_x, world_robot_y):
         print_node_map(node_map, temp_x, temp_y)
         plt.plot(x_map, y_map, "or")
         plt.show()
-    return x_world, x_world
+    return x_world, y_world
 
 
 def existing_route(node_map, robot_x, robot_y):
@@ -345,6 +359,7 @@ def restart_map(node_map):
 def calc_yaw_all_map(node_map):
     size_x = node_map.size_x
     size_y = node_map.size_y
+    yaw_mat = np.zeros((size_x, size_y))
     for i in range(size_x):
         for j in range(size_y):
             if node_map.map[i, j].val == 1:
@@ -354,6 +369,8 @@ def calc_yaw_all_map(node_map):
                 next_idx = 3
                 yaw = calc_yaw(node_map, i, j, next_idx)
             node_map.map[i, j].yaw = yaw
+            yaw_mat[i, j] = yaw
+    return yaw_mat
 
 
 def calc_yaw(node_map, loc_x, loc_y, next_idx):
@@ -406,23 +423,9 @@ def fictitious_magnification(node_map, obs_x, obs_y, gx, gy):
                         node_map.q_obs.put(Cord(distance_to_goal(i, j, gx, gy), i, j))
 
 
-
-
-
-def simulate(min_x, max_x, min_y, max_y, world_gx, world_gy, world_sx, world_sy, reso, obs_vec_x, obs_vec_y):
-    node_map = create_map(min_x, max_x, min_y, max_y, world_gx, world_gy, reso, obs_vec_x, obs_vec_y)
-    calculate_route(node_map, world_sx, world_sy)
-
-    obs = check_new_obstacle
-
-
-    print_arrow_mat(node_map)
-    # Start to drive
-    # TODO
-
-
-
-if __name__ == '__main__':
+# Simulate
+def simulate():
+    # parameters
     min_x = 0.0     # [cm]
     max_x = 100.0    # [cm]
     min_y = -50.0   # [cm]
@@ -434,8 +437,16 @@ if __name__ == '__main__':
     reso = 10        # [cm]
     obs_vec_x = []
     obs_vec_y = []
-    simulate(min_x, max_x, min_y, max_y, world_gx, world_gy, world_sx, world_sy, reso, obs_vec_x, obs_vec_y)
 
-    # x, y = world_to_map(node_map, world_gx, world_gy)
-    # xx, yy = map_to_world(node_map, x, y)
+    # run
+    node_map = create_map(min_x, max_x, min_y, max_y, world_gx, world_gy, reso, obs_vec_x, obs_vec_y)
+    x_world, y_world, yaw_mat = calculate_route(node_map, world_sx, world_sy)
+    obs = check_new_obstacle
+    print_arrow_mat(node_map)
+    print_arrow_yaw_mat(node_map, yaw_mat)
+
+
+
+if __name__ == '__main__':
+    simulate()
 
