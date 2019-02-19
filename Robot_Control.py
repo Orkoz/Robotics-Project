@@ -181,6 +181,7 @@ def convert_angle_and_velocity_to_wheels_commends(delta_yaw, v):
 
 
 def stanley_control(last_target_idx):
+    reached_destination = False
     current_target_idx = calc_target_index()
 
     if last_target_idx >= current_target_idx:
@@ -205,10 +206,11 @@ def stanley_control(last_target_idx):
     theta_d = (np.rad2deg(profile.yaw_mat[x_map, y_map]) - robot.yaw)
     print('thetad: ' + str(theta_d))
     if theta_d > 45:
-        face_yaw(np.rad2deg(profile.yaw_mat[x_map, y_map]))
+        if face_yaw(np.rad2deg(profile.yaw_mat[x_map, y_map])):
+            reached_destination = True
         theta_d = (np.rad2deg(profile.yaw_mat[x_map, y_map]) - robot.yaw)
 
-    return theta_d*Kp, current_target_idx
+    return theta_d*Kp, current_target_idx, reached_destination
 
 def calc_target_index():
     # Calc front axle position
@@ -239,17 +241,30 @@ def pid_control(target, current):
 
 def face_yaw(initial_yaw):
     d_yaw = robot.yaw - initial_yaw
-    while abs(robot.yaw - initial_yaw) > initial_yaw_delta:
-        # if distance_to_goal(robot.x, robot.y) < final_position_delta ** 2:
-        #     return
-        if robot.yaw - initial_yaw < 0:
-            robot.drive(sweeping_angle, 0)
+    while abs(d_yaw) > initial_yaw_delta:
+
+        if distance_to_goal(robot.x, robot.y) < final_position_delta ** 2: # reached_destination
+            return 1
+
+        if abs(d_yaw) <= (360 - abs(d_yaw)):
+            if d_yaw <= 0:
+                robot.drive(sweeping_angle, 0)
+            else:
+                robot.drive(-1*sweeping_angle, 0)
         else:
-            robot.drive(-1*sweeping_angle, 0)
+            if d_yaw >= 0:
+                robot.drive(sweeping_angle, 0)
+            else:
+                robot.drive(-1*sweeping_angle, 0)
+        d_yaw = robot.yaw - initial_yaw
+
+    return 0
 
 
 def preform_motion_profile():
-    face_yaw(profile.yaw[0])
+    if face_yaw(profile.yaw[0]):
+        return 0  # reached_destination
+
     target_idx = calc_target_index()
 
     d = distance_to_goal(robot.x, robot.y)
@@ -259,7 +274,9 @@ def preform_motion_profile():
 
     while flag:
         # a = pid_control(profile.v[target_idx], robot.v)
-        delta_yaw, target_idx = stanley_control(target_idx)
+        delta_yaw, target_idx, reached_destination = stanley_control(target_idx)
+        if reached_destination:
+            break
         robot.drive(delta_yaw, coursing_velocity)
 
         d = distance_to_goal(robot.x, robot.y)
@@ -323,12 +340,12 @@ def facing_new_obstacle():
         else:
             at0 = 2
     if robot.Obs45L != -1:
-        if check_obstacle(robot.x, robot.y, robot.yaw, robot.Obs45L, 45):
+        if check_obstacle(robot.x, robot.y, robot.yaw, robot.Obs45L, -45):
             at45L = 1
         else:
             at45L = 2
     if robot.Obs45R != -1:
-        if check_obstacle(robot.x, robot.y, robot.yaw, robot.Obs45R, -45):
+        if check_obstacle(robot.x, robot.y, robot.yaw, robot.Obs45R, 45):
             at45R = 1
         else:
             at45R = 2
