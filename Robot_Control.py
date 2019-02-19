@@ -8,6 +8,7 @@ from alg import world_to_map
 from alg import distance_to_goal
 import threading
 from alg import check_new_obstacle
+from  alg import line_cross_over_obstacle_on_way_to_target_in_world
 
 # Variables
 f = 1
@@ -305,9 +306,10 @@ def check_position(new_obstacle_mode):
     # handling new obstacle.
     at0, at45L, at45R = facing_new_obstacle()
     if (at0 or at45L or at45L) and (not new_obstacle_mode):
-        robot.drive(0, stop_velocity)
-        pass_obstacle()
-        return 0
+        if line_cross_over_obstacle_on_way_to_target_in_world(robot.x, robot.y):
+            robot.drive(0, stop_velocity)
+            pass_obstacle()
+            return 0
 
     if (at0 == 0 and at45L == 0 and at45R == 0) and new_obstacle_mode:
         robot.drive(0, stop_velocity)

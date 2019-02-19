@@ -73,6 +73,42 @@ class Cord:
 
 
 # Auxiliary functions
+def line_cross_over_obstacle_on_way_to_target_in_world(x_start, y_start):
+    x1, y1 = world_to_map(x_start, y_start)
+    x2, y2 = world_to_map(world_gx, world_gy)
+    return line_cross_over_obstacle_in_map(x1, y1, x2, y2)
+
+
+def line_cross_over_obstacle_in_map(x_start, y_start, x_end, y_end):
+    print_node_map(node_map.x_route[0], node_map.y_route[0])
+    flag = False
+    map_node = node_map.map
+
+    if (x_end - x_start) != 0:
+        a = (y_end - y_start)/(x_end - x_start)
+        for i in range(0, (x_end - x_start), np.sign((x_end - x_start))):
+            xi = x_start + i
+            yi = y_start + int(a*i)
+            value = map_node[xi, yi].val
+            if map_node[xi, yi].val == 1:
+                flag = True
+                plt.plot(xi,  yi, "or")
+            else:
+                plt.plot(xi, yi, "ok")
+    else:
+        for i in range(0, (y_end - y_start), np.sign((y_end - y_start))):
+            yi = y_start + i
+            value = map_node[x_start, yi].val
+            if map_node[x_start, yi].val == 1:
+                flag = True
+                plt.plot(x_start,  yi, "or")
+            else:
+                plt.plot(x_start, yi, "ok")
+    plt.grid(True)
+    plt.show()
+    return flag
+
+
 def calc_map_size(max_val, min_val, resolution):
     return int(round((max_val - min_val) / resolution)) + 2
 
@@ -457,15 +493,19 @@ node_map = NodeMap(min_x, max_x, min_y, max_y, world_gx, world_gy, reso)
 # Simulate
 def simulate():
     # parameters
-    world_sx = 1.0
-    world_sy = 5.0
+    world_sx = -50
+    world_sy = -100
 
     # run
     create_map()
     x_world, y_world, yaw_mat = calculate_route(world_sx, world_sy)
-    obs = check_new_obstacle
-    print_arrow_mat()
-    print_node_mat()
+    x1, y1 = world_to_map(world_sx, world_sy)
+    x2, y2 = world_to_map(-50, 0)
+    line_cross_over_obstacle_in_map(x1, y1, x2, y2)
+    line_cross_over_obstacle_on_way_to_target_in_world(world_sx, world_sy)
+    # obs = check_new_obstacle
+    # print_arrow_mat()
+    # print_node_mat()
 
 
 
