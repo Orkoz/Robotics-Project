@@ -11,12 +11,12 @@ from alg import check_new_obstacle
 
 # Variables
 f = 1
-Closeness0 = 45.0  # [cm]
-Closeness45 = 45.0  # [cm]
+Closeness0 = 20.0  # [cm]
+Closeness45 = 20.0  # [cm]
 Kp = 3.0  # speed proportional gain
 ds = 10  # [cm] Quantization of the motion
 k = 0.01  # control gain
-initial_yaw_delta = 7.0  # [deg]
+initial_yaw_delta = 10.0  # [deg]
 final_position_delta = 10.0  # [cm]
 sweeping_angle = 365.0  # [cm]
 coursing_velocity = 500.0  # [wheel power]
@@ -313,9 +313,9 @@ def check_position(new_obstacle_mode):
         robot.drive(0, stop_velocity)
         return 0
 
-    if (at0 == 2 or at45L == 2 or at45R == 2) and new_obstacle_mode:
-        robot.drive(0, stop_velocity)
-        return 0
+    # if (at0 == 2 or at45L == 2 or at45R == 2) and new_obstacle_mode:
+    #     robot.drive(0, stop_velocity)
+    #     return 0
 
     # handling the situation the we are too close to an obstacle.
     if are_we_too_close():
@@ -363,6 +363,8 @@ def pass_obstacle():
     position_the_robot_at_90_degree_to_obstacle()
     drive_parallel_to_obstacle()
 
+    robot.drive(0, coursing_velocity)
+    robot.drive(0, coursing_velocity)
 
 def drive_parallel_to_obstacle():
     start_passing_time = time()

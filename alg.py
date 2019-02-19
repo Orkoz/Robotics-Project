@@ -4,23 +4,25 @@ import Queue
 import math
 
 # Global
-# min_x = -200.0     # [cm]
-# max_x = 200.0  # [cm]
-# min_y = -280.0  # [cm]
-# max_y = 50   # [cm]
-world_gx = 9  # [cm]
-world_gy = 5  # [cm]
+min_x = -200.0     # [cm]
+max_x = 200.0  # [cm]
+min_y = -280.0  # [cm]
+max_y = 50   # [cm]
+world_gx = 0  # [cm]
+world_gy = 0  # [cm]
 # world_gx = -130 # [cm]
 # world_gy = -155  # [cm]
-min_x = 0.0     # [cm]
-max_x = 10.0  # [cm]
-min_y = 0.0  # [cm]
-max_y = 10   # [cm]
-reso = 1        # [cm]
+# min_x = 0.0     # [cm]
+# max_x = 10.0  # [cm]
+# min_y = 0.0  # [cm]
+# max_y = 10   # [cm]
+reso = 10        # [cm]
 # obs_vec_x = [-30, -30, -30, -30, -30, -30]
 # obs_vec_y = [-160, -150, -140, -130, -120]
-obs_vec_x = []
-obs_vec_y = []
+obs_vec_x = [-65, -55, -45, -35, -25, -15, -5,   5,   10,  15,  25,  35,  45,  55,  65, -65, -55, -45, -35, -25, -15, -5,   5,   10,  15,  25,  35,  45,  55,  65]
+obs_vec_y = [-62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72]
+# obs_vec_x = []
+# obs_vec_y = []
 
 
 # Class
