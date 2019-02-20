@@ -120,6 +120,30 @@ def line_cross_over_obstacle_in_map(x_start, y_start, x_end, y_end):
     return flag
 
 
+def calc_stright_line_route():
+    new_route_x = [node_map.x_route[0]]
+    new_route_y = [node_map.y_route[0]]
+    i = 0
+    while i < len(node_map.x_route) - 1:
+        x = node_map.x_route[i]
+        y = node_map.x_route[i]
+        z = i
+
+        flag = z < len(node_map.x_route) - 1
+        while flag:
+            z = z + 1
+            if z == len(node_map.x_route) - 1:
+                break
+            if line_cross_over_obstacle_in_map(x, y, node_map.x_route[z], node_map.x_route[z]):
+                flag = False
+            z = z + 1
+        i = z
+        new_route_x.append(node_map.x_route[i])
+        new_route_y.append(node_map.y_route[i])
+
+    node_map.x_route = new_route_x
+    node_map.y_route = new_route_y
+
 def calc_map_size(max_val, min_val, resolution):
     return int(round((max_val - min_val) / resolution)) + 2
 
