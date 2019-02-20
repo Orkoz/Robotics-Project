@@ -85,16 +85,27 @@ def line_cross_over_obstacle_in_map(x_start, y_start, x_end, y_end):
     map_node = node_map.map
 
     if (x_end - x_start) != 0:
-        a = (y_end - y_start)/(x_end - x_start)
-        for i in range(0, (x_end - x_start), np.sign((x_end - x_start))):
-            xi = x_start + i
-            yi = y_start + int(a*i)
-            value = map_node[xi, yi].val
-            if map_node[xi, yi].val == 1:
-                flag = True
-                plt.plot(xi,  yi, "or")
-            else:
-                plt.plot(xi, yi, "ok")
+        a = (y_end - y_start) / (x_end - x_start)
+        if abs(y_end - y_start) <= abs(x_end - x_start):
+            for i in range(0, (x_end - x_start), np.sign((x_end - x_start))):
+                xi = x_start + i
+                yi = y_start + int(a*i)
+                value = map_node[xi, yi].val
+                if map_node[xi, yi].val == 1:
+                    flag = True
+                    plt.plot(xi,  yi, "or")
+                else:
+                    plt.plot(xi, yi, "ok")
+        else:
+            for i in range(0, (y_end - y_start), np.sign((y_end - y_start))):
+                xi = x_start + int(i/a)
+                yi = y_start + i
+                value = map_node[xi, yi].val
+                if map_node[xi, yi].val == 1:
+                    flag = True
+                    plt.plot(xi,  yi, "or")
+                else:
+                    plt.plot(xi, yi, "ok")
     else:
         for i in range(0, (y_end - y_start), np.sign((y_end - y_start))):
             yi = y_start + i
