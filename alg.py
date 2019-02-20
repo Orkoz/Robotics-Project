@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import Queue
+# from Robot_Main import world_gy, world_gx, obs_vec_x, obs_vec_y
 import math
 
 # Global
@@ -8,21 +9,16 @@ min_x = -200.0     # [cm]
 max_x = 200.0  # [cm]
 min_y = -280.0  # [cm]
 max_y = 50   # [cm]
-world_gx = 0  # [cm]
-world_gy = 0  # [cm]
-# world_gx = -130 # [cm]
-# world_gy = -155  # [cm]
 # min_x = 0.0     # [cm]
 # max_x = 10.0  # [cm]
 # min_y = 0.0  # [cm]
 # max_y = 10   # [cm]
 reso = 10        # [cm]
-# obs_vec_x = [-30, -30, -30, -30, -30, -30]
-# obs_vec_y = [-160, -150, -140, -130, -120]
-# obs_vec_x = [-65, -55, -45, -35, -25, -15, -5,   5,   10,  15,  25,  35,  45,  55,  65, -65, -55, -45, -35, -25, -15, -5,   5,   10,  15,  25,  35,  45,  55,  65]
-# obs_vec_y = [-62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72]
-obs_vec_x = []
-obs_vec_y = []
+
+world_gx = 0  # [cm]
+world_gy = 0  # [cm]
+obs_vec_x = [-65, -55, -45, -35, -25, -15, -5,   5,   10,  15,  25,  35,  45,  55,  65, -65, -55, -45, -35, -25, -15, -5,   5,   10,  15,  25,  35,  45,  55,  65]
+obs_vec_y = [-62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72]
 
 
 # Class
@@ -85,9 +81,9 @@ def line_cross_over_obstacle_in_map(x_start, y_start, x_end, y_end):
     map_node = node_map.map
 
     if (x_end - x_start) != 0:
-        a = (y_end - y_start) / (x_end - x_start)
+        a = float(y_end - y_start) / float(x_end - x_start)
         if abs(y_end - y_start) <= abs(x_end - x_start):
-            for i in np.arange(0, (x_end - x_start), 0.5*np.sign((x_end - x_start))):
+            for i in np.arange(0, (x_end - x_start), 0.01*np.sign((x_end - x_start))):
                 xi = x_start + int(round(i))
                 yi = y_start + int(round(a*i))
                 value = map_node[xi, yi].val
@@ -97,7 +93,7 @@ def line_cross_over_obstacle_in_map(x_start, y_start, x_end, y_end):
                 # else:
                 #     plt.plot(xi, yi, "ok")
         else:
-            for i in np.arange(0, (y_end - y_start), 0.5*np.sign((y_end - y_start))):
+            for i in np.arange(0, (y_end - y_start), 0.01*np.sign((y_end - y_start))):
                 xi = x_start + int(round(i/a))
                 yi = y_start + int(round(i))
                 value = map_node[xi, yi].val
@@ -107,7 +103,7 @@ def line_cross_over_obstacle_in_map(x_start, y_start, x_end, y_end):
                 # else:
                 #     plt.plot(xi, yi, "ok")
     else:
-        for i in np.arange(0, (y_end - y_start), 0.5*np.sign((y_end - y_start))):
+        for i in np.arange(0, (y_end - y_start), 0.01*np.sign((y_end - y_start))):
             yi = y_start + int(round(i))
             value = map_node[x_start, yi].val
             if map_node[x_start, yi].val == 1:
@@ -355,6 +351,7 @@ def add_connected(queue, node):
 
 # Calculate_route - 2 MODEL
 def calculate_route(world_robot_x, world_robot_y):
+    yaw_mat = np.array([])
     add_new_obstacle()
     x_world, y_world = find_route(world_robot_x, world_robot_y)
     a = len(x_world)
@@ -368,7 +365,7 @@ def find_route(world_robot_x, world_robot_y):
     temp_x, temp_y = world_to_map(world_robot_x, world_robot_y)
     x_world = []
     y_world = []
-    if not temp_x >= 0 and temp_y >= 0 and temp_x < node_map.size_x and temp_y < node_map.size_y:  # in the map
+    if not(temp_x >= 0 and temp_y >= 0 and temp_x < node_map.size_x and temp_y < node_map.size_y):  # in the map
         print('Out of Map')
         return x_world, y_world
     val = node_map.map[temp_x, temp_y].val
@@ -535,16 +532,16 @@ node_map = NodeMap(min_x, max_x, min_y, max_y, world_gx, world_gy, reso)
 # Simulate
 def simulate():
     # parameters
-    world_sx = -50
-    world_sy = -100
+    world_sx = 150
+    world_sy = -200
 
     # run
     create_map()
     x_world, y_world, yaw_mat = calculate_route(world_sx, world_sy)
-    x1, y1 = world_to_map(world_sx, world_sy)
-    x2, y2 = world_to_map(-50, 0)
-    line_cross_over_obstacle_in_map(x1, y1, x2, y2)
-    line_cross_over_obstacle_on_way_to_target_in_world(world_sx, world_sy)
+    # x1, y1 = world_to_map(world_sx, world_sy)
+    # x2, y2 = world_to_map(-50, 0)
+    # line_cross_over_obstacle_in_map(x1, y1, x2, y2)
+    # line_cross_over_obstacle_on_way_to_target_in_world(world_sx, world_sy)
     # obs = check_new_obstacle
     # print_arrow_mat()
     # print_node_mat()
