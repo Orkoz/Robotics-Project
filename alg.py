@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import Queue
-# from Robot_Main import world_gy, world_gx, obs_vec_x, obs_vec_y
+from Robot_Main import world_gy, world_gx, obs_vec_x, obs_vec_y
 import math
 
 # Global
@@ -14,12 +14,6 @@ max_y = 50   # [cm]
 # min_y = 0.0  # [cm]
 # max_y = 10   # [cm]
 reso = 10        # [cm]
-
-world_gx = 0  # [cm]
-world_gy = 0  # [cm]
-obs_vec_x = [-65, -55, -45, -35, -25, -15, -5,   5,   10,  15,  25,  35,  45,  55,  65, -65, -55, -45, -35, -25, -15, -5,   5,   10,  15,  25,  35,  45,  55,  65]
-obs_vec_y = [-62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72]
-
 
 # Class
 class Node:
@@ -52,7 +46,7 @@ class NodeMap:
         self.q_obs = Queue.PriorityQueue()
         self.x_route = []
         self.y_route = []
-        self.obs_size = 2  # [pixel]
+        self.obs_size = 1  # [pixel]
 
 
 class Cord:
@@ -154,6 +148,22 @@ def print_node_map(robot_x, robot_y):
                 plt.plot(i, j, "xb")
             elif i == robot_x and j == robot_y:
                 plt.plot(i, j, "or")
+    plt.grid(True)
+    return plt
+
+
+def print_node_world(robot_x, robot_y):
+    map_node = node_map.map
+    size_x = node_map.size_x
+    size_y = node_map.size_y
+    for i in range(size_x):
+        for j in range(size_y):
+            if map_node[i, j].val == 1:
+                plt.plot(map_to_world(i, j), ".k")
+            elif map_node[i, j].val == 2:
+                plt.plot(map_to_world(i, j), "xb")
+            elif i == robot_x and j == robot_y:
+                plt.plot(map_to_world(i, j), "or")
     plt.grid(True)
     return plt
 
@@ -393,12 +403,14 @@ def find_route(world_robot_x, world_robot_y):
     # print_node_map(temp_x, temp_y)
     # plt.plot(x_map, y_map, "og")
     # plt.show()
-    calc_straight_line_route()
 
-    # print_node_map(temp_x, temp_y)
-    # plt.plot(x_map, y_map, "og")
-    # plt.plot(node_map.x_route, node_map.y_route, "or")
-    # plt.show()
+    if len(node_map.x_route) != 0:
+        calc_straight_line_route()
+
+    print_node_map(temp_x, temp_y)
+    plt.plot(x_map, y_map, "og")
+    plt.plot(node_map.x_route, node_map.y_route, "or")
+    plt.show()
     for xx, yy in zip(node_map.x_route, node_map.y_route):
         xx_w, yy_w = map_to_world(xx, yy)
         x_world.append(xx_w)
