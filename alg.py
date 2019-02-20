@@ -5,15 +5,22 @@ from Robot_Main import world_gy, world_gx, obs_vec_x, obs_vec_y
 import math
 
 # Global
-min_x = -200.0     # [cm]
-max_x = 200.0  # [cm]
-min_y = -280.0  # [cm]
-max_y = 50   # [cm]
+min_x = 0.0     # [cm]
+max_x = 100.0  # [cm]
+min_y = 0.0  # [cm]
+max_y = 100   # [cm]
 # min_x = 0.0     # [cm]
 # max_x = 10.0  # [cm]
 # min_y = 0.0  # [cm]
 # max_y = 10   # [cm]
 reso = 10        # [cm]
+
+world_gx = 0  # [cm]
+world_gy = 0  # [cm]
+# obs_vec_x = [-65, -55, -45, -35, -25, -15, -5,   5,   10,  15,  25,  35,  45,  55,  65, -65, -55, -45, -35, -25, -15, -5,   5,   10,  15,  25,  35,  45,  55,  65]
+# obs_vec_y = [-62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72]
+obs_vec_x = [50]
+obs_vec_y = [50]
 
 # Class
 class Node:
@@ -44,6 +51,7 @@ class NodeMap:
         self.size_y = calc_map_size(max_y, min_y, reso)
         self.gx, self.gy = world_to_map(world_gx, world_gy)
         self.q_obs = Queue.PriorityQueue()
+        self.q_base_obs = Queue.Queue()
         self.x_route = []
         self.y_route = []
         self.obs_size = 1  # [pixel]
@@ -362,13 +370,55 @@ def add_connected(queue, node):
 
 # Calculate_route - 2 MODEL
 def calculate_route(world_robot_x, world_robot_y):
+    robot_x, robot_y = world_to_map(world_robot_x, world_robot_y)
     yaw_mat = np.array([])
+    x_world = []
+    y_world = []
     add_new_obstacle()
+    print_node_map(robot_x, robot_y)
+    plt.plot(robot_x, robot_y, 'or')
+    plt.show()
+    if not(existing_route(robot_x, robot_y)):  # TODO Protect from robot placement on obstacle
+        print('There is no route')
+        return x_world, y_world, yaw_mat
     x_world, y_world = find_route(world_robot_x, world_robot_y)
-    a = len(x_world)
-    if len(x_world):
-        yaw_mat = calc_yaw_all_map()
+    calc_yaw_all_map()
     return x_world, y_world, yaw_mat
+
+
+def existing_route(robot_x, robot_y):
+    val = node_map.map[robot_x, robot_y].val
+    if node_map.obs_size > 0:
+        if val == 0 or val == 1 or val == -5:
+            if val == 0 or val == 1:
+                node_map.obs_size -= 1
+                print('obs_size: ' + str(node_map.obs_size))
+            print('need to re-calculates map')
+            re_initialize_map()
+            print_node_mat()
+            if not(existing_route(robot_x, robot_y)):
+                return 0
+    else:
+        return 0
+    return 1
+
+
+def re_initialize_map():
+    restart_map()
+    re_initialize_obstacle_queue()
+    add_new_obstacle()
+    wave_front()
+
+
+def re_initialize_obstacle_queue():
+    q = Queue.PriorityQueue()
+    gx = node_map.gx
+    gy = node_map.gy
+    while not node_map.q_base_obs.empty():
+        cord = node_map.q_base_obs.get()
+        fictitious_magnification(cord.x, cord.y, gx, gy)
+        q.put(Cord(distance_to_goal_in_map(cord.x, cord.y, gx, gy), cord.x, cord.y))
+    node_map.q_base_obs = q
 
 
 # find route - 2.1 MODEL
@@ -382,8 +432,6 @@ def find_route(world_robot_x, world_robot_y):
     val = node_map.map[temp_x, temp_y].val
     x_map = []
     y_map = []
-    if not(existing_route(temp_x, temp_y)):  # TODO Protect from robot placement on obstacle
-        node_map.obs_size = 1
 
     x_map.append(temp_x)
     y_map.append(temp_y)
@@ -394,48 +442,20 @@ def find_route(world_robot_x, world_robot_y):
         next_y = node_map.map[x_map[-1], y_map[-1]].next_y
         x_map.append(next_x)
         y_map.append(next_y)
-        # xx, yy = map_to_world(next_x, next_y)
-        # x_world.append(xx)
-        # y_world.append(yy)
         val = node_map.map[next_x, next_y].val
     node_map.x_route = x_map
     node_map.y_route = y_map
-    # print_node_map(temp_x, temp_y)
-    # plt.plot(x_map, y_map, "og")
-    # plt.show()
 
-    if len(node_map.x_route) != 0:
-        calc_straight_line_route()
-
+    calc_straight_line_route()
     print_node_map(temp_x, temp_y)
-    plt.plot(x_map, y_map, "og")
-    plt.plot(node_map.x_route, node_map.y_route, "or")
+    plt.plot(node_map.x_route, node_map.y_route, 'or')
     plt.show()
+
     for xx, yy in zip(node_map.x_route, node_map.y_route):
         xx_w, yy_w = map_to_world(xx, yy)
         x_world.append(xx_w)
         y_world.append(yy_w)
     return x_world, y_world
-
-
-def existing_route(robot_x, robot_y):
-    val = node_map.map[robot_x, robot_y].val
-    if val == 0:
-        print('There is no route')
-        return 0
-    # elif val == -10 or val == 1:  # TODO on obstacle - need different solution
-    #     print('There is no route')
-    #     return 0
-    elif val == -5:  # inside sink
-        print('need to re-calculates map')
-        restart_map()
-        wave_front()
-        # print_node_mat()
-        val = node_map.map[robot_x, robot_y].val
-        if val == 0:
-            print('There is no route')
-            return 0
-    return 1
 
 
 def calc_straight_line_route():
@@ -466,8 +486,10 @@ def restart_map():
     size_y = node_map.size_y
     for i in range(size_x):
         for j in range(size_y):
-            if node_map.map[i, j].val != 1 and node_map.map[i, j].val != 2:
-                node_map.map[i, j].val = 0
+            # if node_map.map[i, j].val != 1 and node_map.map[i, j].val != 2:
+            if node_map.map[i, j].val != 2:
+                if not(i == 0 or j == 0 or i == (size_x - 1) or j == (size_y - 1)):
+                    node_map.map[i, j].val = 0
 
     # print_node_map(2, 2)
     # print_node_mat()
@@ -525,6 +547,7 @@ def check_new_obstacle(world_obs_x, world_obs_y):
     if val == 1:  # old obstacle
         return 0  # old obstacle
     else:
+        node_map.q_base_obs.put(Cord(distance_to_goal_in_map(obs_x, obs_y, gx, gy), obs_x, obs_y))
         fictitious_magnification(obs_x, obs_y, gx, gy)
         return 1  # new obstacle
 
@@ -558,8 +581,8 @@ node_map = NodeMap(min_x, max_x, min_y, max_y, world_gx, world_gy, reso)
 # Simulate
 def simulate():
     # parameters
-    world_sx = 90
-    world_sy = 90
+    world_sx = 70
+    world_sy = 70
     node_map1 = node_map
 
     # run
@@ -568,10 +591,10 @@ def simulate():
     x_world, y_world, yaw_mat = calculate_route(world_sx, world_sy)
 
     world_robot_x = 20
-    world_robot_y = 20
-    world_obs_x = 30
-    world_obs_y = 30
-    a = front_or_back_obstacle(world_robot_x, world_robot_y, world_obs_x, world_obs_y)
+    # world_robot_y = 20
+    # world_obs_x = 30
+    # world_obs_y = 30
+    # a = front_or_back_obstacle(world_robot_x, world_robot_y, world_obs_x, world_obs_y)
     # print_node_mat()
     # check kine corve
     # x1, y1 = world_to_map(world_sx, world_sy)
