@@ -19,10 +19,10 @@ world_gy = 0  # [cm]
 reso = 10        # [cm]
 # obs_vec_x = [-30, -30, -30, -30, -30, -30]
 # obs_vec_y = [-160, -150, -140, -130, -120]
-obs_vec_x = [-65, -55, -45, -35, -25, -15, -5,   5,   10,  15,  25,  35,  45,  55,  65, -65, -55, -45, -35, -25, -15, -5,   5,   10,  15,  25,  35,  45,  55,  65]
-obs_vec_y = [-62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72]
-# obs_vec_x = []
-# obs_vec_y = []
+# obs_vec_x = [-65, -55, -45, -35, -25, -15, -5,   5,   10,  15,  25,  35,  45,  55,  65, -65, -55, -45, -35, -25, -15, -5,   5,   10,  15,  25,  35,  45,  55,  65]
+# obs_vec_y = [-62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72]
+obs_vec_x = []
+obs_vec_y = []
 
 
 # Class
@@ -80,69 +80,45 @@ def line_cross_over_obstacle_on_way_to_target_in_world(x_start, y_start):
 
 
 def line_cross_over_obstacle_in_map(x_start, y_start, x_end, y_end):
-    print_node_map(node_map.x_route[0], node_map.y_route[0])
+    # print_node_map(node_map.x_route[0], node_map.y_route[0])
     flag = False
     map_node = node_map.map
 
     if (x_end - x_start) != 0:
         a = (y_end - y_start) / (x_end - x_start)
         if abs(y_end - y_start) <= abs(x_end - x_start):
-            for i in range(0, (x_end - x_start), np.sign((x_end - x_start))):
-                xi = x_start + i
-                yi = y_start + int(a*i)
+            for i in np.arange(0, (x_end - x_start), 0.5*np.sign((x_end - x_start))):
+                xi = x_start + int(round(i))
+                yi = y_start + int(round(a*i))
                 value = map_node[xi, yi].val
                 if map_node[xi, yi].val == 1:
                     flag = True
-                    plt.plot(xi,  yi, "or")
-                else:
-                    plt.plot(xi, yi, "ok")
+                #     plt.plot(xi,  yi, "or")
+                # else:
+                #     plt.plot(xi, yi, "ok")
         else:
-            for i in range(0, (y_end - y_start), np.sign((y_end - y_start))):
-                xi = x_start + int(i/a)
-                yi = y_start + i
+            for i in np.arange(0, (y_end - y_start), 0.5*np.sign((y_end - y_start))):
+                xi = x_start + int(round(i/a))
+                yi = y_start + int(round(i))
                 value = map_node[xi, yi].val
                 if map_node[xi, yi].val == 1:
                     flag = True
-                    plt.plot(xi,  yi, "or")
-                else:
-                    plt.plot(xi, yi, "ok")
+                #     plt.plot(xi,  yi, "or")
+                # else:
+                #     plt.plot(xi, yi, "ok")
     else:
-        for i in range(0, (y_end - y_start), np.sign((y_end - y_start))):
-            yi = y_start + i
+        for i in np.arange(0, (y_end - y_start), 0.5*np.sign((y_end - y_start))):
+            yi = y_start + int(round(i))
             value = map_node[x_start, yi].val
             if map_node[x_start, yi].val == 1:
                 flag = True
-                plt.plot(x_start,  yi, "or")
-            else:
-                plt.plot(x_start, yi, "ok")
-    plt.grid(True)
-    plt.show()
+                # plt.plot(x_start,  yi, "or")
+            # else:
+                # plt.plot(x_start, yi, "ok")
+    # plt.grid(True)
+    # plt.show()
     return flag
 
-
-def calc_stright_line_route():
-    new_route_x = [node_map.x_route[0]]
-    new_route_y = [node_map.y_route[0]]
-    i = 0
-    while i < len(node_map.x_route) - 1:
-        x = node_map.x_route[i]
-        y = node_map.x_route[i]
-        z = i
-
-        flag = z < len(node_map.x_route) - 1
-        while flag:
-            z = z + 1
-            if z == len(node_map.x_route) - 1:
-                break
-            if line_cross_over_obstacle_in_map(x, y, node_map.x_route[z], node_map.x_route[z]):
-                flag = False
-            z = z + 1
-        i = z
-        new_route_x.append(node_map.x_route[i])
-        new_route_y.append(node_map.y_route[i])
-
-    node_map.x_route = new_route_x
-    node_map.y_route = new_route_y
 
 def calc_map_size(max_val, min_val, resolution):
     return int(round((max_val - min_val) / resolution)) + 2
@@ -408,16 +384,25 @@ def find_route(world_robot_x, world_robot_y):
             next_y = node_map.map[x_map[-1], y_map[-1]].next_y
             x_map.append(next_x)
             y_map.append(next_y)
-            xx, yy = map_to_world(next_x, next_y)
-            x_world.append(xx)
-            y_world.append(yy)
+            # xx, yy = map_to_world(next_x, next_y)
+            # x_world.append(xx)
+            # y_world.append(yy)
             val = node_map.map[next_x, next_y].val
         node_map.x_route = x_map
         node_map.y_route = y_map
+        print_node_map(temp_x, temp_y)
+        plt.plot(x_map, y_map, "og")
+        plt.show()
+        calc_straight_line_route()
 
         print_node_map(temp_x, temp_y)
-        plt.plot(x_map, y_map, "or")
+        plt.plot(x_map, y_map, "og")
+        plt.plot(node_map.x_route, node_map.y_route, "or")
         plt.show()
+        for xx, yy in zip(node_map.x_route, node_map.y_route):
+            xx_w, yy_w = map_to_world(xx, yy)
+            x_world.append(xx_w)
+            y_world.append(yy_w)
     return x_world, y_world
 
 
@@ -439,6 +424,28 @@ def existing_route(robot_x, robot_y):
             print('There is no route')
             return 0
     return 1
+
+
+def calc_straight_line_route():
+    new_route_x = [node_map.x_route[0]]
+    new_route_y = [node_map.y_route[0]]
+    i = 0
+    while i < len(node_map.x_route) - 1:
+        x = node_map.x_route[i]
+        y = node_map.y_route[i]
+        z = i
+
+        while z < len(node_map.x_route) - 1:
+            if line_cross_over_obstacle_in_map(x, y, node_map.x_route[z + 1], node_map.y_route[z + 1]):
+                break
+            else:
+                z = z + 1
+        i = z
+        new_route_x.append(node_map.x_route[i])
+        new_route_y.append(node_map.y_route[i])
+
+    node_map.x_route = new_route_x
+    node_map.y_route = new_route_y
 
 
 def restart_map():
@@ -465,7 +472,7 @@ def calc_yaw_all_map():
                 next_idx = 0
                 yaw = calc_yaw(i, j, next_idx)
             else:
-                next_idx = 5
+                next_idx = 1
                 yaw = calc_yaw(i, j, next_idx)
             node_map.map[i, j].yaw = yaw
             yaw_mat[i, j] = yaw

@@ -13,11 +13,12 @@ from  alg import line_cross_over_obstacle_on_way_to_target_in_world
 # Variables
 Closeness0 = 20.0  # [cm]
 Closeness45 = 20.0  # [cm]
+ds = 10  #  [cm]
 Kp = 3.0  # speed proportional gain
 initial_yaw_delta = 10.0  # [deg]
 final_position_delta = 10.0  # [cm]
 drive_directly_to_target_d = 4  # [factor]
-sweeping_angle = 365.0  # [cm]
+sweeping_angle = 345.0  # [cm]
 coursing_velocity = 500.0  # [wheel power]
 stop_velocity = -300  # [wheel power]
 sleep_time = 0.5  # [sec]
@@ -27,7 +28,7 @@ pass_obstacle_timeout = 10  # [sec]
 class Robot(object):
     def __init__(self):
         super(Robot, self).__init__()
-        self.state = RClient("192.168.1.153", 2777)
+        self.state = RClient("192.168.1.157", 2777)
         self.state.connect()
         self.x = 0.0
         self.y = 0.0
@@ -216,8 +217,8 @@ def preform_motion_profile():
 
         d = distance_to_goal(robot.x, robot.y)
 
-        if d < drive_directly_to_target_d*(final_position_delta**2):
-            return drive_directly_to_target()
+        # if d < drive_directly_to_target_d*(final_position_delta**2):
+        #     return drive_directly_to_target()
 
         reached_destination = d < final_position_delta**2
         flag = check_position_flag and not reached_destination
