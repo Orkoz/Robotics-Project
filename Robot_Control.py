@@ -132,26 +132,24 @@ def convert_angle_and_velocity_to_wheels_commends(delta_yaw, v):
 
 
 def stanley_control():
-    reached_destination = False
 
     x_map, y_map = world_to_map(robot.x, robot.y)
     theta_d = (np.rad2deg(profile.yaw_mat[x_map, y_map]) - robot.yaw)
     # print('theta_d: ' + str(theta_d))
     if theta_d > critical_yaw:
-        if face_yaw(np.rad2deg(profile.yaw_mat[x_map, y_map])):
-            reached_destination = True
+        face_yaw(np.rad2deg(profile.yaw_mat[x_map, y_map]))
         theta_d = (np.rad2deg(profile.yaw_mat[x_map, y_map]) - robot.yaw)
 
-    return theta_d*Kp, reached_destination
+    return theta_d*Kp
 
 
 def face_yaw(initial_yaw):
     d_yaw = robot.yaw - initial_yaw
     while abs(d_yaw) > initial_yaw_delta:
         facing_new_obstacle()
-
-        if distance_to_goal(robot.x, robot.y) < final_position_delta ** 2: # reached_destination
-            return 1
+        #
+        # if distance_to_goal(robot.x, robot.y) < final_position_delta ** 2: # reached_destination
+        #     return 1
 
         if abs(d_yaw) <= (360 - abs(d_yaw)):
             if d_yaw <= 0:
@@ -165,38 +163,26 @@ def face_yaw(initial_yaw):
                 robot.drive(-1*sweeping_angle, 0)
         d_yaw = robot.yaw - initial_yaw
 
-    return 0
-
 
 def preform_motion_profile():
     print('start motion profile')
     x_map, y_map = world_to_map(robot.x, robot.y)
-    print ('facing initial yaw')
-    if face_yaw(np.rad2deg(profile.yaw_mat[x_map, y_map])):
-        return 0  # reached_destination
+    # print ('facing initial yaw')
 
+    face_yaw(np.rad2deg(profile.yaw_mat[x_map, y_map]))
+    delta_yaw = stanley_control()
     d = distance_to_goal(robot.x, robot.y)
     reached_destination = d < final_position_delta ** 2
     check_position_flag = check_position(0)
     flag = check_position_flag and not reached_destination
 
     while flag:
-        delta_yaw, reached_destination = stanley_control()
-        if reached_destination:
-            break
-
-        check_position_flag = check_position(0)
-        if check_position_flag:
-            break
-
         robot.drive(delta_yaw, coursing_velocity)
 
+        delta_yaw = stanley_control()
+        check_position_flag = check_position(0)
         d = distance_to_goal(robot.x, robot.y)
-
-        if d < drive_directly_to_target_d*(final_position_delta**2):
-            return drive_directly_to_target()
-
-        reached_destination = d < final_position_delta**2
+        reached_destination = d < drive_directly_to_target_d*(final_position_delta**2)
         flag = check_position_flag and not reached_destination
 
         # plt.plot(robot.X, robot.Y, label="course")
@@ -212,22 +198,20 @@ def preform_motion_profile():
     if reached_destination:
         return 0
     elif not check_position_flag:
-        return 1
+        return drive_directly_to_target()
 
 
 def drive_directly_to_target():
     print('driving directly to target')
     d = distance_to_goal(robot.x, robot.y)
     reached_destination = d < final_position_delta ** 2
+    robot_target_angle = np.arctan2((world_gy - robot.y), (world_gx - robot.x))
 
     while not reached_destination:
-        sleep(sleep_time*2)
-        robot_target_angle = np.arctan2((world_gy - robot.y), (world_gx - robot.x))
-        if face_yaw(robot_target_angle):
-            break
-
         robot.drive(0, drive_directly_to_target_velocity)
+        face_yaw(robot_target_angle)
 
+        sleep(sleep_time * 2)
         d = distance_to_goal(robot.x, robot.y)
         reached_destination = d < final_position_delta**2
 
