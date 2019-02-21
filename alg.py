@@ -19,8 +19,8 @@ world_gx = 0  # [cm]
 world_gy = 0  # [cm]
 # obs_vec_x = [-65, -55, -45, -35, -25, -15, -5,   5,   10,  15,  25,  35,  45,  55,  65, -65, -55, -45, -35, -25, -15, -5,   5,   10,  15,  25,  35,  45,  55,  65]
 # obs_vec_y = [-62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72]
-obs_vec_x = []
-obs_vec_y = []
+obs_vec_x = [50]
+obs_vec_y = [50]
 
 # Class
 class Node:
@@ -541,19 +541,22 @@ def calc_yaw_all_map():
     yaw_mat = np.zeros((size_x, size_y))
     for i in range(size_x):
         for j in range(size_y):
-            if node_map.map[i, j].val == 1:
-                next_idx = 0
-                yaw = calc_yaw(i, j, next_idx)
-            else:
-                next_idx = 1
-                yaw = calc_yaw(i, j, next_idx)
+            yaw = calc_yaw(i, j)
             node_map.map[i, j].yaw = yaw
             yaw_mat[i, j] = yaw
     return yaw_mat
 
 
-def calc_yaw(loc_x, loc_y, next_idx):
-    x, y = find_closest_node_in_route(loc_x, loc_y, next_idx)
+def calc_yaw(loc_x, loc_y):
+    val = node_map.map[loc_x, loc_y].val
+    if val == 1:
+        flag, x, y = find_out_from_obs(loc_x, loc_y)
+        if not(flag):
+            next_idx = 0
+            x, y = find_closest_node_in_route(loc_x, loc_y, next_idx)
+    else:
+        next_idx = 1
+        x, y = find_closest_node_in_route(loc_x, loc_y, next_idx)
     yaw = (np.arctan2(y - loc_y, x - loc_x))
     return yaw
 
@@ -628,7 +631,6 @@ def simulate():
     create_map()
     print_node_mat()
     x_world, y_world, yaw_mat = calculate_route(world_sx, world_sy)
-    print_arrow_mat()
     print_arrow_yaw_mat(yaw_mat)
 
     world_robot_x = 20
