@@ -49,32 +49,37 @@ class Robot(object):
         self.T = [0]
         self.csv_file = np.array([self.x, self.y, self.Dx, self.Dy, self.yaw, self.v, self.dt])
         sleep(1)
+        self.condition = threading.Condition()
         self.update_params_thread = threading.Thread(target=self.update_params)
         self.update_params_thread.start()
         sleep(1)
 
     def update_params(self):
-        x, y, self.Dx, self.Dy, self.Obs45R, self.Obs0, self.Obs45L = self.state.sense()
-        if abs(self.x) < 1000:
-            self.yaw = np.rad2deg(np.arctan2(self.Dy, self.Dx))
-            self.dt = time() - self.time_stamp
-            self.time_stamp = time()
-            # self.v = np.sqrt((x - self.x)**2 + (y - self.y)**2) / self.dt
-            self.x = x
-            self.y = y
-            self.X.append(self.x)
-            self.Y.append(self.y)
-            self.YAW.append(self.yaw)
-            self.V.append(self.v)
-            self.T.append(self.T[-1] + self.dt)
-            self.csv_file = np.vstack((self.csv_file, np.array([self.x, self.y, self.Dx, self.Dy, self.yaw, self.v, self.dt])))
+        with self.condition:
+            x, y, self.Dx, self.Dy, self.Obs45R, self.Obs0, self.Obs45L = self.state.sense()
+            if abs(self.x) < 1000:
+                self.yaw = np.rad2deg(np.arctan2(self.Dy, self.Dx))
+                self.dt = time() - self.time_stamp
+                self.time_stamp = time()
+                # self.v = np.sqrt((x - self.x)**2 + (y - self.y)**2) / self.dt
+                self.x = x
+                self.y = y
+                self.X.append(self.x)
+                self.Y.append(self.y)
+                self.YAW.append(self.yaw)
+                self.V.append(self.v)
+                self.T.append(self.T[-1] + self.dt)
+                self.csv_file = np.vstack((self.csv_file, np.array([self.x, self.y, self.Dx, self.Dy, self.yaw, self.v, self.dt])))
+                self.condition.notifyAll()
 
 
     def drive(self, delta_yaw, v):
         left, right = convert_angle_and_velocity_to_wheels_commends(delta_yaw, v)
         self.state.drive(int(left), int(right))
-        sleep(sleep_time)
-        robot.update_params()
+        with self.condition:
+            self.wait
+        # sleep(sleep_time)
+        # robot.update_params()
 
     def plot_actual_motion(self):
         plt.plot(self.X, self.Y, label="course")
@@ -219,7 +224,7 @@ def drive_directly_to_target():
 
 
 def check_position(new_obstacle_mode):
-    robot.update_params()
+    # robot.update_params()
     at0, at45L, at45R = facing_new_obstacle()
     # handling the situation the we are too close to an obstacle.
     if are_we_too_close() and (at0 == 1 or at45L == 1 or at45R == 1):
