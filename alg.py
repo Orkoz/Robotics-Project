@@ -254,10 +254,8 @@ def initialize_obstacle_queue(obs_x, obs_y):
 
 def add_obstacle():
     add_new_obstacle()
-    print_node_mat()  # TODO delet
     connect_obstacle()
     add_new_obstacle()
-    print_node_mat()  # TODO delet
 
 
 # Add new obstacle - 1.2 MODEL
@@ -597,6 +595,15 @@ def find_closest_node_in_route(loc_x, loc_y, next_idx):
     closest_in_route = min(d)
     closest_idx_in_route = d.index(closest_in_route)
     direction_idx = closest_idx_in_route + next_idx
+    # add part TODO not helping
+    # x = x_map[closest_idx_in_route]
+    # y = y_map[closest_idx_in_route]
+    # curr_val = node_map.map[loc_x, loc_y].val
+    # next_val = node_map.map[x, y].val
+    # if next_val < curr_val:
+    #     if (distance_to_goal(x, y) + 3**2) < distance_to_goal(loc_x, loc_y):
+    #         direction_idx = closest_idx_in_route
+    # end of add part
     if direction_idx >= (len(x_map) - 1):
         direction_idx = (len(x_map) - 1)
     x = x_map[direction_idx]
