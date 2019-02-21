@@ -15,12 +15,14 @@ max_y = 100   # [cm]
 # max_y = 10   # [cm]
 reso = 10        # [cm]
 
-world_gx = 0  # [cm]
-world_gy = 0  # [cm]
+world_gx = 50  # [cm]
+world_gy = 50  # [cm]
 # obs_vec_x = [-65, -55, -45, -35, -25, -15, -5,   5,   10,  15,  25,  35,  45,  55,  65, -65, -55, -45, -35, -25, -15, -5,   5,   10,  15,  25,  35,  45,  55,  65]
 # obs_vec_y = [-62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72]
-obs_vec_x = [50, 50]
-obs_vec_y = [50, 60]
+# obs_vec_x = [40, 40, 40, 50, 50, 60, 60, 60]
+# obs_vec_y = [40, 50, 60, 40, 60, 40, 50, 60]
+obs_vec_x = []
+obs_vec_y = []
 
 # Class
 class Node:
@@ -401,11 +403,15 @@ def calculate_route(world_robot_x, world_robot_y):
     print_node_map(robot_x, robot_y)
     plt.plot(robot_x, robot_y, 'or')
     plt.show()
+    print_node_mat()
     flag, robot_x, robot_y = existing_route(robot_x, robot_y)
     if not(flag):
-        print('There is no route')
+        print('There is no existing route')
         return x_world, y_world, yaw_mat
     x_world, y_world = find_route(robot_x, robot_y, world_robot_x, world_robot_y)
+    if there_is_a_circle(x_world, y_world):
+        print('There is no route - There is a circle')
+        return [], [], yaw_mat
     yaw_mat = calc_yaw_all_map()
     return x_world, y_world, yaw_mat
 
@@ -558,6 +564,13 @@ def restart_map():
     # print_node_mat()
 
 
+def there_is_a_circle(x_world, y_world):
+    for i in range(1, len(x_world)):
+        for j in range(i + 1, len(x_world)):
+            if x_world[i] == x_world[j] and y_world[i] == y_world[j]:
+                return 1
+    return 0
+
 # Calc yaw - 2.4 MODEL
 def calc_yaw_all_map():
     size_x = node_map.size_x
@@ -656,6 +669,7 @@ node_map = NodeMap(min_x, max_x, min_y, max_y, world_gx, world_gy, reso)
 # Simulate
 def simulate():
     # parameters
+    # a = there_is_a_circle([1, 2, 3, 4, 1.2], [1, 2, 3, 4, 1.2])
     world_sx = 90
     world_sy = 90
     node_map1 = node_map
@@ -663,9 +677,10 @@ def simulate():
     # run
     create_map()
     print_node_mat()
-    initialize_obstacle_queue([50, 60], [60, 50])
+    initialize_obstacle_queue([40, 40, 40, 50, 50, 60, 60, 60], [40, 50, 60, 40, 60, 40, 50, 60])
     x_world, y_world, yaw_mat = calculate_route(world_sx, world_sy)
-    print_arrow_yaw_mat(yaw_mat)
+    if len(x_world):
+        print_arrow_yaw_mat(yaw_mat)
 
     world_robot_x = 20
     # world_robot_y = 20
