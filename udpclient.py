@@ -144,7 +144,7 @@ def test():
 
 
 def test2():
-    r = RClient("192.168.1.153", 2777)
+    r = RClient("192.168.1.157", 2777)
     if r.connect():
         for i in range(30):
             r.drive(int(1000), int(-1000))
@@ -159,4 +159,4 @@ def test2():
     r.terminate()
 	
 if __name__=='__main__':
-    test()
+    test2()

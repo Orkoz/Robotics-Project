@@ -5,18 +5,18 @@ import Queue
 import math
 
 # Global
-min_x = 0.0     # [cm]
-max_x = 100.0  # [cm]
-min_y = 0.0  # [cm]
-max_y = 100   # [cm]
+min_x = -200     # [cm]
+max_x = 200  # [cm]
+min_y = -280  # [cm]
+max_y = 50   # [cm]
 # min_x = 0.0     # [cm]
 # max_x = 10.0  # [cm]
 # min_y = 0.0  # [cm]
 # max_y = 10   # [cm]
 reso = 10        # [cm]
 
-world_gx = 50  # [cm]
-world_gy = 50  # [cm]
+world_gx = 0  # [cm]
+world_gy = 0  # [cm]
 # obs_vec_x = [-65, -55, -45, -35, -25, -15, -5,   5,   10,  15,  25,  35,  45,  55,  65, -65, -55, -45, -35, -25, -15, -5,   5,   10,  15,  25,  35,  45,  55,  65]
 # obs_vec_y = [-62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72]
 # obs_vec_x = [40, 40, 40, 50, 50, 60, 60, 60]
@@ -403,7 +403,7 @@ def calculate_route(world_robot_x, world_robot_y):
     print_node_map(robot_x, robot_y)
     plt.plot(robot_x, robot_y, 'or')
     plt.show()
-    print_node_mat()
+    # print_node_mat()
     flag, robot_x, robot_y = existing_route(robot_x, robot_y)
     if not(flag):
         print('There is no existing route')
@@ -422,9 +422,10 @@ def existing_route(robot_x, robot_y):
         if val == 0 or val == 1 or val == -5:
             if val == 1:
                 flag, robot_x, robot_y = find_out_from_obs(robot_x, robot_y)
-                if flag:
+                new_val = node_map.map[robot_x, robot_y].val
+                if flag and new_val != -5:
                     return 1, robot_x, robot_y
-                else:
+                elif not(flag and new_val == -5):
                     node_map.obs_size -= 1
                     print('obs_size: ' + str(node_map.obs_size))
             elif val == 0:
@@ -432,7 +433,7 @@ def existing_route(robot_x, robot_y):
                 print('obs_size: ' + str(node_map.obs_size))
             print('need to re-calculates map')
             re_initialize_map()
-            print_node_mat()
+            # print_node_mat()
             flag, robot_x, robot_y = existing_route(robot_x, robot_y)
             if not (flag):
                 return 0, robot_x, robot_y
@@ -488,7 +489,7 @@ def re_initialize_obstacle_queue():
         fictitious_magnification(cord.x, cord.y, gx, gy)
         q.put(Cord(distance_to_goal_in_map(cord.x, cord.y, gx, gy), cord.x, cord.y))
     node_map.q_base_obs = q
-    print_node_mat()
+    # print_node_mat()
 
 
 # find route - 2.1 MODEL
@@ -670,14 +671,14 @@ node_map = NodeMap(min_x, max_x, min_y, max_y, world_gx, world_gy, reso)
 def simulate():
     # parameters
     # a = there_is_a_circle([1, 2, 3, 4, 1.2], [1, 2, 3, 4, 1.2])
-    world_sx = 90
-    world_sy = 90
+    world_sx = 100
+    world_sy = -100
     node_map1 = node_map
 
     # run
     create_map()
-    print_node_mat()
-    initialize_obstacle_queue([40, 40, 40, 50, 50, 60, 60, 60], [40, 50, 60, 40, 60, 40, 50, 60])
+    # print_node_mat()
+    # initialize_obstacle_queue([40, 40, 40, 50, 50, 60, 60, 60], [40, 50, 60, 40, 60, 40, 50, 60])
     x_world, y_world, yaw_mat = calculate_route(world_sx, world_sy)
     if len(x_world):
         print_arrow_yaw_mat(yaw_mat)

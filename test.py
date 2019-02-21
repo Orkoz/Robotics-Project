@@ -54,13 +54,14 @@ def wait_for_event(e):
     j = 1
     while 1:
         e.wait()
-        # print(j)
+        print(j)
         j = j+1
+        e.clear()
 
 
 def set_event(e):
     while 1:
-        sleep(1)
+        sleep(2)
         e.set()
 
 
