@@ -1,11 +1,10 @@
 from Robot_Control import *
 from alg import *
+import threading
 
 
 # world_gx = -130 # [cm]
 # world_gy = -155  # [cm]
-
-
 # obs_vec_x = [-30, -30, -30, -30, -30, -30]
 # obs_vec_y = [-160, -150, -140, -130, -120]
 
@@ -19,6 +18,7 @@ world_gy = -150  # [cm]
 obs_vec_x = []
 obs_vec_y = []
 
+
 def main():
     create_map()
     x, y, yaw_mat = calculate_route(robot.x, robot.y)
@@ -26,10 +26,9 @@ def main():
     if not len(x):
         print('There is no Route')
         return 0
-    # print_arrow_yaw_mat(yaw_mat)
-    # print_node_mat()
-    p = print_node_map(robot.x, robot.y)
-    p.show()
+
+    t = threading.Thread(target=print_node_map, args=(robot.x, robot.y, ))
+    t.start()
 
     initialize_motion(x, y, yaw_mat)
 
@@ -39,12 +38,8 @@ def main():
             print('There is no Route')
             return 0
         initialize_motion(x, y, yaw_mat)
-        p = print_node_map(robot.x, robot.y)
-        p.show()
-
-    # robot.plot_actual_motion()
-    # p = print_node_map(robot.x, robot.y)
-    # p.show()
+        t = threading.Thread(target=print_node_map, args=(robot.x, robot.y,))
+        t.start()
 
     print(robot.x, robot.y)
     print('FINISHED!!!')

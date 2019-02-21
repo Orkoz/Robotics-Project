@@ -159,7 +159,8 @@ def print_node_map(robot_x, robot_y):
             elif i == robot_x and j == robot_y:
                 plt.plot(i, j, "or")
     plt.grid(True)
-    return plt
+    plt.show()
+    # return plt
 
 
 def print_node_world(robot_x, robot_y):
@@ -659,7 +660,7 @@ def front_or_back_obstacle(world_robot_x, world_robot_y, world_obs_x, world_obs_
     obs_x, obs_y = world_to_map(world_obs_x, world_obs_y)
     vr = node_map.map[robot_x, robot_y].val
     vo = node_map.map[obs_x, obs_y].val
-    print('robot val: ' + str(node_map.map[robot_x, robot_y].val) + ', obj val: ' + str(node_map.map[obs_x, obs_y].val))
+    # print('robot val: ' + str(node_map.map[robot_x, robot_y].val) + ', obj val: ' + str(node_map.map[obs_x, obs_y].val))
     return node_map.map[robot_x, robot_y].val <= node_map.map[obs_x, obs_y].val
 
 
