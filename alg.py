@@ -19,8 +19,8 @@ world_gx = 0  # [cm]
 world_gy = 0  # [cm]
 # obs_vec_x = [-65, -55, -45, -35, -25, -15, -5,   5,   10,  15,  25,  35,  45,  55,  65, -65, -55, -45, -35, -25, -15, -5,   5,   10,  15,  25,  35,  45,  55,  65]
 # obs_vec_y = [-62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72]
-obs_vec_x = [50]
-obs_vec_y = [50]
+obs_vec_x = [60]
+obs_vec_y = [60]
 
 # Class
 class Node:
@@ -254,6 +254,7 @@ def initialize_obstacle_queue(obs_vec_x, obs_vec_y):
 
 # Add new obstacle - 1.2 MODEL
 def add_new_obstacle():
+    connect_obstacle()
     q_new_direction = Queue.PriorityQueue()
     while not node_map.q_obs.empty():  # as long as there is a new obstacle
         cord = node_map.q_obs.get()
@@ -263,6 +264,25 @@ def add_new_obstacle():
         while not node_map.map[cord.x, cord.y].prev.empty():  # As long as there is a node that passed through it
             q_new_direction.put(node_map.map[cord.x, cord.y].prev.get())
     find_new_next(q_new_direction)
+    print_node_mat() # TODO delet
+
+
+def connect_obstacle():
+    size_x = node_map.size_x
+    size_y = node_map.size_y
+    gx = node_map.gx
+    gy = node_map.gy
+    for i in range(1, size_x - 1):
+        for j in range(1, size_y - 1):
+            val_curr = node_map.map[i, j].val
+            if val_curr != 1 and val_curr != -10:
+                val_up = node_map.map[i, j + 1].val
+                val_down = node_map.map[i, j - 1].val
+                val_left = node_map.map[i - 1, j].val
+                val_right = node_map.map[i + 1, j].val
+                if (val_up == 1 and val_down == 1) or (val_left == 1 and val_right == 1) or \
+                        (val_up == -10 and val_down == -10) or (val_left == -10 and val_right == -10):
+                    fictitious_magnification(i, j, gx, gy)
 
 
 def find_new_next(q_new_direction):  # find new next fore the node connected to the new wall
@@ -416,7 +436,7 @@ def find_out_from_obs(robot_x, robot_y):
     obs_size = node_map.obs_size
     new_robot_x = robot_x
     new_robot_y = robot_y
-    min_dis = (obs_size + 3)  # TODO **2
+    min_dis = (obs_size + 3)**2
     factor = 1
     flag_found = False
     while not(flag_found) and (factor <= obs_size + 1):
