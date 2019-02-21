@@ -19,8 +19,8 @@ world_gx = 0  # [cm]
 world_gy = 0  # [cm]
 # obs_vec_x = [-65, -55, -45, -35, -25, -15, -5,   5,   10,  15,  25,  35,  45,  55,  65, -65, -55, -45, -35, -25, -15, -5,   5,   10,  15,  25,  35,  45,  55,  65]
 # obs_vec_y = [-62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72]
-obs_vec_x = [60]
-obs_vec_y = [60]
+obs_vec_x = [50, 50]
+obs_vec_y = [50, 60]
 
 # Class
 class Node:
@@ -222,7 +222,7 @@ def create_map():
     # initialize obstacle queue
     initialize_obstacle_queue(obs_vec_x, obs_vec_y)
     # Add obstacles
-    add_new_obstacle()
+    add_obstacle()
     # Wave_front
     wave_front()
     return
@@ -247,14 +247,21 @@ def construct_node_map():
 
 
 # initialize obstacle queue
-def initialize_obstacle_queue(obs_vec_x, obs_vec_y):
-    for i in range(len(obs_vec_x)):
-        check_new_obstacle(obs_vec_x[i], obs_vec_y[i])
+def initialize_obstacle_queue(obs_x, obs_y):
+    for i in range(len(obs_x)):
+        check_new_obstacle(obs_x[i], obs_y[i])
+
+
+def add_obstacle():
+    add_new_obstacle()
+    print_node_mat()  # TODO delet
+    connect_obstacle()
+    add_new_obstacle()
+    print_node_mat()  # TODO delet
 
 
 # Add new obstacle - 1.2 MODEL
 def add_new_obstacle():
-    connect_obstacle()
     q_new_direction = Queue.PriorityQueue()
     while not node_map.q_obs.empty():  # as long as there is a new obstacle
         cord = node_map.q_obs.get()
@@ -264,7 +271,6 @@ def add_new_obstacle():
         while not node_map.map[cord.x, cord.y].prev.empty():  # As long as there is a node that passed through it
             q_new_direction.put(node_map.map[cord.x, cord.y].prev.get())
     find_new_next(q_new_direction)
-    print_node_mat() # TODO delet
 
 
 def connect_obstacle():
@@ -280,9 +286,8 @@ def connect_obstacle():
                 val_down = node_map.map[i, j - 1].val
                 val_left = node_map.map[i - 1, j].val
                 val_right = node_map.map[i + 1, j].val
-                if (val_up == 1 and val_down == 1) or (val_left == 1 and val_right == 1) or \
-                        (val_up == -10 and val_down == -10) or (val_left == -10 and val_right == -10):
-                    fictitious_magnification(i, j, gx, gy)
+                if (val_up == 1 and val_down == 1) or (val_left == 1 and val_right == 1):
+                    node_map.q_obs.put(Cord(distance_to_goal_in_map(i, j, gx, gy), i, j))
 
 
 def find_new_next(q_new_direction):  # find new next fore the node connected to the new wall
@@ -394,7 +399,7 @@ def calculate_route(world_robot_x, world_robot_y):
     yaw_mat = np.array([])
     x_world = []
     y_world = []
-    add_new_obstacle()
+    add_obstacle()
     print_node_map(robot_x, robot_y)
     plt.plot(robot_x, robot_y, 'or')
     plt.show()
@@ -466,7 +471,7 @@ def find_out_from_obs(robot_x, robot_y):
 def re_initialize_map():
     restart_map()
     re_initialize_obstacle_queue()
-    add_new_obstacle()
+    add_obstacle()
     wave_front()
 
 
@@ -479,6 +484,7 @@ def re_initialize_obstacle_queue():
         fictitious_magnification(cord.x, cord.y, gx, gy)
         q.put(Cord(distance_to_goal_in_map(cord.x, cord.y, gx, gy), cord.x, cord.y))
     node_map.q_base_obs = q
+    print_node_mat()
 
 
 # find route - 2.1 MODEL
@@ -605,26 +611,26 @@ def check_new_obstacle(world_obs_x, world_obs_y):
     gy = node_map.gy
     if obs_x < 0 or obs_y < 0 or obs_x >= node_map.size_x or obs_y >= node_map.size_y:  # out of map
         return -1  # out of boundary
-    val = int(round(node_map.map[obs_x, obs_y].val))
-    if val == 1:  # old obstacle
-        return 0  # old obstacle
-    else:
+    falg_new = fictitious_magnification(obs_x, obs_y, gx, gy)
+    if falg_new:
         node_map.q_base_obs.put(Cord(distance_to_goal_in_map(obs_x, obs_y, gx, gy), obs_x, obs_y))
-        fictitious_magnification(obs_x, obs_y, gx, gy)
         return 1  # new obstacle
+    else:
+        return 0  # # old obstacle
 
 
 def fictitious_magnification(obs_x, obs_y, gx, gy):
-    val = node_map.map[obs_x, obs_y].val
+    falg_new = False
     obs_size = node_map.obs_size
-    if not(val == -10.0 or val == 1):  # the node is not in the queue and not a wall
-        for i in range(obs_x - obs_size, obs_x + obs_size + 1):
-            for j in range(obs_y - obs_size, obs_y + obs_size + 1):
-                if i >= 0 and j >= 0 and i < node_map.size_x and j < node_map.size_y:  # in the map
-                    val = node_map.map[i, j].val
-                    if not(val == -10.0 or val == 1):  # the node is not in the queue and not a wall
-                        node_map.map[i, j].val = -10.0  # the node is put inside the queue
-                        node_map.q_obs.put(Cord(distance_to_goal_in_map(i, j, gx, gy), i, j))
+    for i in range(obs_x - obs_size, obs_x + obs_size + 1):
+        for j in range(obs_y - obs_size, obs_y + obs_size + 1):
+            if i >= 0 and j >= 0 and i < node_map.size_x and j < node_map.size_y:  # in the map
+                val = node_map.map[i, j].val
+                if not(val == -10.0 or val == 1):  # the node is not in the queue and not a wall
+                    node_map.map[i, j].val = -10.0  # the node is put inside the queue
+                    node_map.q_obs.put(Cord(distance_to_goal_in_map(i, j, gx, gy), i, j))
+                    falg_new = True
+    return falg_new
 
 
 def front_or_back_obstacle(world_robot_x, world_robot_y, world_obs_x, world_obs_y):
@@ -650,6 +656,7 @@ def simulate():
     # run
     create_map()
     print_node_mat()
+    initialize_obstacle_queue([50, 60], [60, 50])
     x_world, y_world, yaw_mat = calculate_route(world_sx, world_sy)
     print_arrow_yaw_mat(yaw_mat)
 
