@@ -1,6 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.pyplot as animation
 from time import sleep
+import threading
 import Queue
 from time import time
 #
@@ -46,22 +48,45 @@ from time import time
 #
 # plt.show()
 
-a = "robot " + str(time()) + " .csv"
-print(a)
+# a = "robot " + str(time()) + " .csv"
+# print(a)
+def wait_for_event(e):
+    j = 1
+    while 1:
+        e.wait()
+        # print(j)
+        j = j+1
+
+
+def set_event(e):
+    while 1:
+        sleep(1)
+        e.set()
+
+
+
 # temp_x = 1
 # temp_y = 2
 # x = []
 # y = []
-# plt.ion()
-#
+# fig = plt.figure()
+# ax = fig.add_subplot(1, 1, 1)
+e = threading.Event()
+t_wait = threading.Thread(target=wait_for_event, args=(e, ))
+t_set = threading.Thread(target=set_event, args=(e, ))
+
+t_wait.start()
+t_set.start()
+
 # while True:
+#
 #     x.append(temp_x)
 #     y.append(temp_x+1)
-#     plt.plot(x, y)
-#     plt.show(block=False)
-#     sleep(2)
-#     plt.close()
+#     ax.plot(x, y)
+#     fig.show()
+#     sleep(1)
+#     ax.clear()
 #     temp_x += 1
 #     a = x[-1]
 #     print(a)
-#
+#     #

@@ -49,13 +49,12 @@ class Robot(object):
         self.T = [0]
         self.csv_file = np.array([self.x, self.y, self.Dx, self.Dy, self.yaw, self.v, self.dt])
         sleep(1)
-        self.condition = threading.Condition()
+        self.e = threading.Event()
         self.update_params_thread = threading.Thread(target=self.update_params)
         self.update_params_thread.start()
         sleep(1)
 
     def update_params(self):
-        with self.condition:
             x, y, self.Dx, self.Dy, self.Obs45R, self.Obs0, self.Obs45L = self.state.sense()
             if abs(self.x) < 1000:
                 self.yaw = np.rad2deg(np.arctan2(self.Dy, self.Dx))
@@ -71,13 +70,12 @@ class Robot(object):
                 self.T.append(self.T[-1] + self.dt)
                 self.csv_file = np.vstack((self.csv_file, np.array([self.x, self.y, self.Dx, self.Dy, self.yaw, self.v, self.dt])))
                 self.condition.notifyAll()
-
+            self.e.set()
 
     def drive(self, delta_yaw, v):
         left, right = convert_angle_and_velocity_to_wheels_commends(delta_yaw, v)
         self.state.drive(int(left), int(right))
-        with self.condition:
-            self.wait
+        self.e.wait()
         # sleep(sleep_time)
         # robot.update_params()
 
