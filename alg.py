@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import Queue
-from Robot_Main import world_gy, world_gx, obs_vec_x, obs_vec_y
+# from Robot_Main import world_gy, world_gx, obs_vec_x, obs_vec_y
 import math
 
 # Global
@@ -19,8 +19,8 @@ world_gx = 0  # [cm]
 world_gy = 0  # [cm]
 # obs_vec_x = [-65, -55, -45, -35, -25, -15, -5,   5,   10,  15,  25,  35,  45,  55,  65, -65, -55, -45, -35, -25, -15, -5,   5,   10,  15,  25,  35,  45,  55,  65]
 # obs_vec_y = [-62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72]
-obs_vec_x = [50]
-obs_vec_y = [50]
+obs_vec_x = []
+obs_vec_y = []
 
 # Class
 class Node:
@@ -54,7 +54,7 @@ class NodeMap:
         self.q_base_obs = Queue.Queue()
         self.x_route = []
         self.y_route = []
-        self.obs_size = 1  # [pixel]
+        self.obs_size = 2  # [pixel]
 
 
 class Cord:
@@ -324,7 +324,7 @@ def find_next(loc_x, loc_y):
                     if min_val >= temp_val:  # smallest val
                         if not(find_circle(loc_x, loc_y, i, j)):  # Next comes to current "Ping pong"
                             temp_dis = distance_to_goal_in_map(i, j, gx, gy)
-                            if min_dis >=  temp_dis or temp_val < min_val:  # closest to goal at lest one if exist
+                            if min_dis >= temp_dis or temp_val < min_val:  # closest to goal at lest one if exist
                                 min_dis = temp_dis
                                 min_val = temp_val
                                 node_map.map[loc_x, loc_y].next_x = i
@@ -378,11 +378,12 @@ def calculate_route(world_robot_x, world_robot_y):
     print_node_map(robot_x, robot_y)
     plt.plot(robot_x, robot_y, 'or')
     plt.show()
-    if not(existing_route(robot_x, robot_y)):  # TODO Protect from robot placement on obstacle
+    flag, robot_x, robot_y = existing_route(robot_x, robot_y)
+    if not(flag):
         print('There is no route')
         return x_world, y_world, yaw_mat
-    x_world, y_world = find_route(world_robot_x, world_robot_y)
-    calc_yaw_all_map()
+    x_world, y_world = find_route(robot_x, robot_y, world_robot_x, world_robot_y)
+    yaw_mat = calc_yaw_all_map()
     return x_world, y_world, yaw_mat
 
 
@@ -390,17 +391,56 @@ def existing_route(robot_x, robot_y):
     val = node_map.map[robot_x, robot_y].val
     if node_map.obs_size > 0:
         if val == 0 or val == 1 or val == -5:
-            if val == 0 or val == 1:
+            if val == 1:
+                flag, robot_x, robot_y = find_out_from_obs(robot_x, robot_y)
+                if flag:
+                    return 1, robot_x, robot_y
+                else:
+                    node_map.obs_size -= 1
+                    print('obs_size: ' + str(node_map.obs_size))
+            elif val == 0:
                 node_map.obs_size -= 1
                 print('obs_size: ' + str(node_map.obs_size))
             print('need to re-calculates map')
             re_initialize_map()
             print_node_mat()
-            if not(existing_route(robot_x, robot_y)):
-                return 0
+            flag, robot_x, robot_y = existing_route(robot_x, robot_y)
+            if not (flag):
+                return 0, robot_x, robot_y
     else:
-        return 0
-    return 1
+        return 0, robot_x, robot_y
+    return 1, robot_x, robot_y
+
+
+def find_out_from_obs(robot_x, robot_y):
+    obs_size = node_map.obs_size
+    new_robot_x = robot_x
+    new_robot_y = robot_y
+    min_dis = (obs_size + 3)  # TODO **2
+    factor = 1
+    flag_found = False
+    while not(flag_found) and (factor <= obs_size + 1):
+        for i in range(robot_x - factor, robot_x + factor + 1):
+            for j in range(robot_y - factor, robot_y + factor + 1):
+                if i >= 0 and j >= 0 and i < node_map.size_x and j < node_map.size_y:  # in the map
+                    boundary_min_x = robot_x - factor
+                    boundary_max_x = robot_x + factor
+                    boundary_min_y = robot_y - factor
+                    boundary_max_y = robot_y + factor
+                    # on the frame
+                    if i == boundary_min_x or j == boundary_min_y or i == boundary_max_x or j == boundary_max_y:
+                        val = node_map.map[i, j].val
+                        if val != 1 and val != 0:
+                            temp_dis = distance_to_goal_in_map(i, j, robot_x, robot_y)
+                            if min_dis >= temp_dis:  # closest to robot at lest one if exist
+                                min_dis = temp_dis
+                                new_robot_x = node_map.map[i, j].x
+                                new_robot_y = node_map.map[i, j].y
+                                flag_found = True
+        factor += 1
+    if flag_found:
+        return 1, new_robot_x, new_robot_y
+    return 0, new_robot_x, new_robot_y
 
 
 def re_initialize_map():
@@ -422,8 +462,7 @@ def re_initialize_obstacle_queue():
 
 
 # find route - 2.1 MODEL
-def find_route(world_robot_x, world_robot_y):
-    temp_x, temp_y = world_to_map(world_robot_x, world_robot_y)
+def find_route(temp_x, temp_y, world_robot_x, world_robot_y):
     x_world = []
     y_world = []
     if not(temp_x >= 0 and temp_y >= 0 and temp_x < node_map.size_x and temp_y < node_map.size_y):  # in the map
@@ -581,14 +620,16 @@ node_map = NodeMap(min_x, max_x, min_y, max_y, world_gx, world_gy, reso)
 # Simulate
 def simulate():
     # parameters
-    world_sx = 70
-    world_sy = 70
+    world_sx = 90
+    world_sy = 90
     node_map1 = node_map
 
     # run
     create_map()
     print_node_mat()
     x_world, y_world, yaw_mat = calculate_route(world_sx, world_sy)
+    print_arrow_mat()
+    print_arrow_yaw_mat(yaw_mat)
 
     world_robot_x = 20
     # world_robot_y = 20
