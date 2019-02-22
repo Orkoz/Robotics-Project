@@ -8,11 +8,13 @@ from alg import distance_to_goal
 from alg import check_new_obstacle
 import threading
 from alg import front_or_back_obstacle
+from alg import min_x,max_x,min_y,max_y
 
 
 # Variables
 Closeness0 = 40.0  # [cm]
 Closeness45 = 40.0  # [cm]
+Edge_Closeness = 40.0  # [cm]
 Kp = 3.0  # speed proportional gain
 initial_yaw_delta = 10.0  # [deg]
 final_position_delta = 10.0  # [cm]
@@ -225,9 +227,12 @@ def drive_directly_to_target():
 
 
 def check_position(new_obstacle_mode):
+    if are_we_too_close_to_edge():
+        robot.drive(0, stop_velocity)
+
     at0, at45L, at45R = facing_new_obstacle()
     # handling the situation the we are too close to an obstacle.
-    if are_we_too_close() and (at45L == 1 or at45R == 1):
+    if are_we_too_close_to_obstacle() and (at45L == 1 or at45R == 1):
         robot.drive(0, stop_velocity)
         robot.drive(0, -500)
         print('we are too close!')
@@ -251,10 +256,19 @@ def check_position(new_obstacle_mode):
     return 1
 
 
-def are_we_too_close():
+def are_we_too_close_to_obstacle():
     return (robot.Obs0 <= Closeness0 and robot.Obs0 != -1) or \
            (robot.Obs45L <= Closeness45 and robot.Obs45L != -1) or \
            (robot.Obs45R <= Closeness45 and robot.Obs45R != -1)
+
+
+def are_we_too_close_to_edge():
+    dis_to_edge_x = min(abs(robot.x - min_x), abs(robot.x - max_x))
+    dis_to_edge_y = min(abs(robot.y - min_y), abs(robot.y - max_y))
+    if (dis_to_edge_x/robot.Dx) <= Edge_Closeness or (dis_to_edge_y/robot.Dy) <= Edge_Closeness:
+        return 1
+
+    return 0
 
 
 def facing_new_obstacle():
