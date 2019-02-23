@@ -29,7 +29,6 @@ sleep_time = 0.5  # [sec]
 pass_obstacle_timeout = 10  # [sec]
 
 
-
 class Robot(object):
     def __init__(self):
         super(Robot, self).__init__()
@@ -272,7 +271,7 @@ def are_we_too_close_to_obstacle():
 def are_we_too_close_to_edge():
     dis_to_edge_x = min(abs(robot.x - min_x), abs(robot.x - max_x))
     dis_to_edge_y = min(abs(robot.y - min_y), abs(robot.y - max_y))
-    if (dis_to_edge_x/robot.Dx) <= Edge_Closeness or (dis_to_edge_y/robot.Dy) <= Edge_Closeness:
+    if dis_to_edge_x <= Edge_Closeness*robot.Dx or dis_to_edge_y <= Edge_Closeness*robot.Dy:
         return 1
 
     return 0
