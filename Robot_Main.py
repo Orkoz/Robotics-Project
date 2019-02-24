@@ -38,6 +38,7 @@ def main():
             print('There is no Route')
             return 0
         initialize_motion(x, y, yaw_mat)
+        print('NEW Route')
         t = threading.Thread(target=print_node_map, args=(robot.x, robot.y,))
         t.start()
 

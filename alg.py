@@ -7,7 +7,7 @@ import math
 # Global
 min_x = -200     # [cm]
 max_x = 200  # [cm]
-min_y = -280  # [cm]
+min_y = -260  # [cm]
 max_y = 50   # [cm]
 # min_x = 0.0     # [cm]
 # max_x = 10.0  # [cm]
@@ -662,7 +662,6 @@ def front_or_back_obstacle(world_robot_x, world_robot_y, world_obs_x, world_obs_
     vr = node_map.map[robot_x, robot_y].val
     vo = node_map.map[obs_x, obs_y].val
     # print('robot val: ' + str(node_map.map[robot_x, robot_y].val) + ', obj val: ' + str(node_map.map[obs_x, obs_y].val))
-    a = vr <= abs(vo)
     return vr <= abs(vo)
 
 

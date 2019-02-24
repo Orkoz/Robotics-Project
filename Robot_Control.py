@@ -20,10 +20,10 @@ initial_yaw_delta = 10.0  # [deg]
 go_around_obstacle_delta_yaw = 45  # [deg]
 critical_yaw = 30  # [deg]
 final_position_delta = 5.0  # [cm]
-drive_directly_to_target_d = 2  # [factor]
-sweeping_angle = 340.0  # [cm]
+drive_directly_to_target_d = 5  # [factor]
+sweeping_angle = 350.0  # [cm]
 coursing_velocity = 300.0  # [wheel power]
-drive_directly_to_target_velocity = 250.0  # [wheel power]
+drive_directly_to_target_velocity = 230.0  # [wheel power]
 stop_velocity = -1000  # [wheel power]
 sleep_time = 0.5  # [sec]
 pass_obstacle_timeout = 1000  # [sec]
@@ -146,6 +146,8 @@ def stanley_control():
 
 
 def face_yaw(initial_yaw):
+    if initial_yaw == 180 or initial_yaw == -180:
+        print
     d_yaw = robot.yaw - initial_yaw
     while abs(d_yaw) > initial_yaw_delta:
         facing_new_obstacle()
@@ -270,11 +272,21 @@ def are_we_too_close_to_obstacle():
 
 
 def are_we_too_close_to_edge():
-    dis_to_edge_x = min(abs(robot.x - min_x), abs(robot.x - max_x))
-    dis_to_edge_y = min(abs(robot.y - min_y), abs(robot.y - max_y))
+    dis_to_min_edge_x = abs(robot.x - min_x)
+    dis_to__min_edge_y = abs(robot.y - min_y)
+    dis_to_max_edge_x =  abs(robot.x - max_x)
+    dis_to__max_edge_y = abs(robot.y - max_y)
+
     a = Edge_Closeness*robot.Dx
     b = Edge_Closeness*robot.Dy
-    if dis_to_edge_x <= Edge_Closeness*robot.Dx or dis_to_edge_y <= Edge_Closeness*robot.Dy:
+
+    if robot.Dx < 0 and dis_to_min_edge_x <= abs(Edge_Closeness*robot.Dx):
+        return 1
+    if robot.Dx >= 0 and dis_to_max_edge_x <= Edge_Closeness*robot.Dx:
+        return 1
+    if robot.Dy < 0 and dis_to__min_edge_y <= abs(Edge_Closeness*robot.Dy):
+        return 1
+    if robot.Dy >= 0 and dis_to__max_edge_y <= Edge_Closeness*robot.Dy:
         return 1
 
     return 0
@@ -317,14 +329,13 @@ def pass_obstacle():
     position_the_robot_at_90_degree_to_obstacle()
     drive_parallel_to_obstacle()
     robot.drive(sweeping_angle, 0)
-    # go_around_obstacle()
 
 
 def position_the_robot_at_90_degree_to_obstacle():
     while robot.Obs0 != -1:
         robot.drive(sweeping_angle, 0)
         facing_new_obstacle()
-        sleep(sleep_time)
+        sleep(sleep_time*2)
 
 
 def drive_parallel_to_obstacle():
@@ -334,22 +345,6 @@ def drive_parallel_to_obstacle():
         robot.drive(0, coursing_velocity)
         position_the_robot_at_90_degree_to_obstacle()
         dt = time() - start_passing_time
-
-
-# def go_around_obstacle():
-    # initial_yaw = robot.yaw
-    # while abs(robot.yaw - initial_yaw + go_around_obstacle_delta_yaw) > initial_yaw_delta and check_position(1):
-    # robot.drive(0, coursing_velocity)
-    # robot.drive(0, coursing_velocity)
-    #     while robot.Obs45L == -1:
-    #         robot.drive(-1 * sweeping_angle, 0)
-    #         facing_new_obstacle()
-    # i=0
-    # while i < 3 and check_position(1):
-    #     robot.drive(0, coursing_velocity)
-    #     face_yaw()
-    #     facing_new_obstacle()
-    #     i = i + 1
 
 
 def initialize_motion(x, y, yaw_mat):
