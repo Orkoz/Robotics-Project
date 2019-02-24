@@ -5,5 +5,5 @@
 *.xml
 .idea/workspace.xml
 *.pyc
-*.xml
-*.pyc
+.idea/workspace.xml
+alg.pyc

@@ -14,7 +14,7 @@ import threading
 # obs_vec_y = [-62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72]
 
 world_gx = 0  # [cm]
-world_gy = -150  # [cm]
+world_gy = 0  # [cm]
 obs_vec_x = []
 obs_vec_y = []
 
@@ -38,6 +38,7 @@ def main():
             print('There is no Route')
             return 0
         initialize_motion(x, y, yaw_mat)
+        print('NEW Route')
         t = threading.Thread(target=print_node_map, args=(robot.x, robot.y,))
         t.start()
 
