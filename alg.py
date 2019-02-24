@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import Queue
-# from Robot_Main import world_gy, world_gx, obs_vec_x, obs_vec_y
+from Robot_Main import world_gy, world_gx, obs_vec_x, obs_vec_y
 import math
 
 # Global
@@ -15,14 +15,14 @@ max_y = 50   # [cm]
 # max_y = 10   # [cm]
 reso = 10        # [cm]
 
-world_gx = 0  # [cm]
-world_gy = 0  # [cm]
+# world_gx = 0  # [cm]
+# world_gy = 0  # [cm]
 # obs_vec_x = [-65, -55, -45, -35, -25, -15, -5,   5,   10,  15,  25,  35,  45,  55,  65, -65, -55, -45, -35, -25, -15, -5,   5,   10,  15,  25,  35,  45,  55,  65]
 # obs_vec_y = [-62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -62, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72, -72]
 # obs_vec_x = [40, 40, 40, 50, 50, 60, 60, 60]
 # obs_vec_y = [40, 50, 60, 40, 60, 40, 50, 60]
-obs_vec_x = []
-obs_vec_y = []
+# obs_vec_x = []
+# obs_vec_y = []
 
 # Class
 class Node:
@@ -159,6 +159,7 @@ def print_node_map(robot_x, robot_y):
             elif i == robot_x and j == robot_y:
                 plt.plot(i, j, "or")
     plt.grid(True)
+    plt.plot(node_map.x_route, node_map.y_route, 'or')
     plt.show()
     # return plt
 
@@ -401,9 +402,9 @@ def calculate_route(world_robot_x, world_robot_y):
     x_world = []
     y_world = []
     add_obstacle()
-    print_node_map(robot_x, robot_y)
-    plt.plot(robot_x, robot_y, 'or')
-    plt.show()
+    # print_node_map(robot_x, robot_y)
+    # plt.plot(robot_x, robot_y, 'or')
+    # plt.show()
     # print_node_mat()
     flag, robot_x, robot_y = existing_route(robot_x, robot_y)
     if not(flag):
@@ -518,9 +519,9 @@ def find_route(temp_x, temp_y, world_robot_x, world_robot_y):
     node_map.y_route = y_map
 
     calc_straight_line_route()
-    print_node_map(temp_x, temp_y)
-    plt.plot(node_map.x_route, node_map.y_route, 'or')
-    plt.show()
+    # print_node_map(temp_x, temp_y)
+    # plt.plot(node_map.x_route, node_map.y_route, 'or')
+    # plt.show()
 
     for xx, yy in zip(node_map.x_route, node_map.y_route):
         xx_w, yy_w = map_to_world(xx, yy)
@@ -661,7 +662,8 @@ def front_or_back_obstacle(world_robot_x, world_robot_y, world_obs_x, world_obs_
     vr = node_map.map[robot_x, robot_y].val
     vo = node_map.map[obs_x, obs_y].val
     # print('robot val: ' + str(node_map.map[robot_x, robot_y].val) + ', obj val: ' + str(node_map.map[obs_x, obs_y].val))
-    return node_map.map[robot_x, robot_y].val <= node_map.map[obs_x, obs_y].val
+    a = vr <= abs(vo)
+    return vr <= abs(vo)
 
 
 # Global map
