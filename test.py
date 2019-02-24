@@ -50,20 +50,24 @@ from time import time
 
 # a = "robot " + str(time()) + " .csv"
 # print(a)
-def wait_for_event(e):
-    j = 1
-    while 1:
-        e.wait()
-        print(j)
-        j = j+1
-        e.clear()
+class Robot(object):
+    def __init__(self):
+        self.e = threading.Event()
+        t_wait = threading.Thread(target=self.wait_for_event)
+        t_wait.start()
 
+    def wait_for_event(self):
+        j = 1
+        while 1:
+            self.e.clear()
+            self.e.wait()
+            print(j)
+            j = j+1
 
-def set_event(e):
-    while 1:
-        sleep(2)
-        e.set()
-
+    def set_event(self):
+        while 1:
+            sleep(2)
+            self.e.set()
 
 
 # temp_x = 1
@@ -72,13 +76,8 @@ def set_event(e):
 # y = []
 # fig = plt.figure()
 # ax = fig.add_subplot(1, 1, 1)
-e = threading.Event()
-t_wait = threading.Thread(target=wait_for_event, args=(e, ))
-t_set = threading.Thread(target=set_event, args=(e, ))
-
-t_wait.start()
-t_set.start()
-
+robot = Robot()
+robot.set_event()
 # while True:
 #
 #     x.append(temp_x)
