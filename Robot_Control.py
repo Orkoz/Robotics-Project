@@ -21,6 +21,8 @@ go_around_obstacle_delta_yaw = 45  # [deg]
 critical_yaw = 30  # [deg]
 final_position_delta = 5.0  # [cm]
 drive_directly_to_target_d = 5  # [factor]
+start_motion_sweeping_angle = 350.0  # [cm]
+start_motion_coursing_velocity = 300.0  # [wheel power]
 sweeping_angle = 350.0  # [cm]
 coursing_velocity = 300.0  # [wheel power]
 drive_directly_to_target_velocity = 230.0  # [wheel power]
@@ -328,7 +330,8 @@ def check_obstacle(robot_x, robot_y, robot_angle, obs_dis, obs_angle):
 def pass_obstacle():
     position_the_robot_at_90_degree_to_obstacle()
     drive_parallel_to_obstacle()
-    robot.drive(sweeping_angle, 0)
+    go_around()
+    # robot.drive(sweeping_angle, 0)
 
 
 def position_the_robot_at_90_degree_to_obstacle():
@@ -345,6 +348,17 @@ def drive_parallel_to_obstacle():
         robot.drive(0, coursing_velocity)
         position_the_robot_at_90_degree_to_obstacle()
         dt = time() - start_passing_time
+
+
+def go_around():
+    initial_yaw = robot.yaw
+    delta_yaw = robot.yaw - (initial_yaw - go_around_obstacle_delta_yaw)
+    while delta_yaw > initial_yaw_delta and check_position(1):
+        robot.drive(0, coursing_velocity)
+        while robot.Obs45L == -1:
+            robot.drive(-1*sweeping_angle, 0)
+            facing_new_obstacle()
+            sleep(sleep_time * 2)
 
 
 def initialize_motion(x, y, yaw_mat):
