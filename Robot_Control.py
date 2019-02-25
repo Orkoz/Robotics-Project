@@ -18,17 +18,18 @@ Edge_Closeness = 40.0  # [cm]
 Kp = 3.0  # speed proportional gain
 initial_yaw_delta = 10.0  # [deg]
 go_around_obstacle_delta_yaw = 45  # [deg]
+movement_delta_yaw = 1  # [deg]
+movement_delta_x_y = 1  # [deg]
 critical_yaw = 30  # [deg]
 final_position_delta = 5.0  # [cm]
 drive_directly_to_target_d = 5  # [factor]
-start_motion_sweeping_angle = 350.0  # [cm]
-start_motion_coursing_velocity = 300.0  # [wheel power]
 sweeping_angle = 350.0  # [cm]
 coursing_velocity = 300.0  # [wheel power]
 drive_directly_to_target_velocity = 230.0  # [wheel power]
 stop_velocity = -1000  # [wheel power]
 sleep_time = 0.5  # [sec]
 pass_obstacle_timeout = 1000  # [sec]
+to_close_to_edge_flag = False
 
 
 class Robot(object):
@@ -50,12 +51,15 @@ class Robot(object):
         self.X = []
         self.Y = []
         self.YAW = []
-        self.V = []
+        # self.V = []
         self.T = [0]
         self.csv_file = np.array([self.x, self.y, self.Dx, self.Dy, self.yaw, self.v, self.dt])
         self.e = threading.Event()
         self.update_params_thread = threading.Thread(target=self.update_params)
         self.update_params_thread.start()
+        self.start_motion_sweeping_angle = 0  # [cm]
+        self.start_motion_coursing_velocity = 0  # [wheel power]
+        self.to_close_to_edge_flag = are_we_too_close_to_edge()
 
     def update_params(self):
         while 1:
@@ -70,16 +74,45 @@ class Robot(object):
                 self.X.append(self.x)
                 self.Y.append(self.y)
                 self.YAW.append(self.yaw)
-                self.V.append(self.v)
+                # self.V.append(self.v)
                 self.T.append(self.T[-1] + self.dt)
                 self.csv_file = np.vstack((self.csv_file, np.array([self.x, self.y, self.Dx, self.Dy, self.yaw, self.v, self.dt])))
             self.e.set()
 
     def drive(self, delta_yaw, v):
+        prev_x = round(robot.x)
+        prev_y = round(robot.y)
+        prev_yaw = round(robot.yaw)
+
         left, right = convert_angle_and_velocity_to_wheels_commends(delta_yaw, v)
         self.state.drive(int(left), int(right))
         self.e.clear()
         self.e.wait()
+
+        if v == 0 and abs(round(robot.yaw) - prev_yaw) < movement_delta_yaw:
+            robot.start_rotational_motion(delta_yaw, prev_yaw)
+        if delta_yaw == 0 and abs(round(robot.x) - prev_x) < movement_delta_x_y and abs(round(robot.y) - prev_y) < movement_delta_x_y:
+            robot.start_linear_motion(v, prev_x, prev_y)
+
+    def start_rotational_motion(self, delta_yaw, prev_yaw):
+        while abs(round(robot.yaw) - prev_yaw) < movement_delta_yaw:
+            self.start_motion_sweeping_angle = self.start_motion_sweeping_angle + 1
+            print(self.start_motion_sweeping_angle)
+            left, right = convert_angle_and_velocity_to_wheels_commends(delta_yaw + self.start_motion_sweeping_angle, 0)
+            self.state.drive(int(left), int(right))
+            self.e.clear()
+            self.e.wait()
+        self.start_motion_sweeping_angle = self.start_motion_sweeping_angle - 1
+
+    def start_linear_motion(self, v, prev_x, prev_y):
+        while abs(round(robot.x) - prev_x) < movement_delta_x_y and abs(round(robot.y) - prev_y) < movement_delta_x_y:
+            self.start_motion_coursing_velocity = self.start_motion_coursing_velocity + 1
+            print(self.start_motion_coursing_velocity)
+            left, right = convert_angle_and_velocity_to_wheels_commends(0, v + self.start_motion_coursing_velocity)
+            self.state.drive(int(left), int(right))
+            self.e.clear()
+            self.e.wait()
+        self.start_motion_coursing_velocity = self.start_motion_coursing_velocity - 1
 
     def plot_actual_motion(self):
         plt.plot(self.X, self.Y, label="course")
@@ -88,13 +121,6 @@ class Robot(object):
         plt.xlabel("x[m]")
         plt.ylabel("y[m]")
         plt.axis("equal")
-        plt.grid(True)
-        plt.show()
-
-        plt.plot(self.T, self.V)
-        plt.title('actual velocity')
-        plt.xlabel("Time[s]")
-        plt.ylabel("Speed[km/h]")
         plt.grid(True)
         plt.show()
 
@@ -137,7 +163,6 @@ def convert_angle_and_velocity_to_wheels_commends(delta_yaw, v):
 
 
 def stanley_control():
-
     x_map, y_map = world_to_map(robot.x, robot.y)
     theta_d = (np.rad2deg(profile.yaw_mat[x_map, y_map]) - robot.yaw)
     if theta_d > critical_yaw:
@@ -239,7 +264,11 @@ def drive_directly_to_target():
 
 def check_position(new_obstacle_mode):
     if are_we_too_close_to_edge():
-        robot.drive(0, stop_velocity)
+        if not robot.to_close_to_edge_flag:
+            robot.drive(0, stop_velocity)
+            robot.to_close_to_edge_flag = True
+    else:
+        robot.to_close_to_edge_flag = False
 
     at0, at45L, at45R = facing_new_obstacle()
     # handling the situation the we are too close to an obstacle.
@@ -359,6 +388,7 @@ def go_around():
             robot.drive(-1*sweeping_angle, 0)
             facing_new_obstacle()
             sleep(sleep_time * 2)
+        robot.drive(sweeping_angle, 0)
 
 
 def initialize_motion(x, y, yaw_mat):

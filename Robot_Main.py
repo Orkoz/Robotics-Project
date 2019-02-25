@@ -44,6 +44,7 @@ def main():
 
     print(robot.x, robot.y)
     print('FINISHED!!!')
+    robot.plot_actual_motion()
     robot.state.terminate()
     return 0
 
