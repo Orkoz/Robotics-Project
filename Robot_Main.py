@@ -2,11 +2,14 @@ from Robot_Control import *
 from alg import *
 import threading
 
-
+# min_x = -200     # [cm]
+# max_x = 200  # [cm]
+# min_y = -260  # [cm]
+# max_y = 50   # [cm]
 # world_gx = -130 # [cm]
 # world_gy = -155  # [cm]
-# obs_vec_x = [-30, -30, -30, -30, -30, -30]
-# obs_vec_y = [-160, -150, -140, -130, -120]
+# obs_vec_x = [-80, -70, -60, -50, -40, -30, -20, -10,   0,  10,  20,  30,  40,  50,  60, -80, -70, -60, -50, -40, -30, -20, -10,   0,  10,  20,  30,  40,  50,  60]
+# obs_vec_y = [-70, -70, -70, -70, -70, -70, -70, -70, -70, -70, -70, -70, -70, -70, -70, -80, -80, -80, -80, -80, -80, -80, -80, -80, -80, -80, -80, -80, -80, -80]
 
 # world_gx = 0  # [cm]
 # world_gy = 0  # [cm]
@@ -20,6 +23,7 @@ obs_vec_y = []
 
 
 def main():
+    print(robot.x, robot.y)
     create_map()
     x, y, yaw_mat = calculate_route(robot.x, robot.y)
     print(robot.x, robot.y)
@@ -44,7 +48,7 @@ def main():
 
     print(robot.x, robot.y)
     print('FINISHED!!!')
-    robot.plot_actual_motion()
+    # robot.plot_actual_motion()
     robot.state.terminate()
     return 0
 

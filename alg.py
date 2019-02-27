@@ -56,7 +56,7 @@ class NodeMap:
         self.q_base_obs = Queue.Queue()
         self.x_route = []
         self.y_route = []
-        self.obs_size = 2  # [pixel]
+        self.obs_size = 1  # [pixel] %TODO 2
 
 
 class Cord:
@@ -420,7 +420,7 @@ def calculate_route(world_robot_x, world_robot_y):
 
 def existing_route(robot_x, robot_y):
     val = node_map.map[robot_x, robot_y].val
-    if node_map.obs_size > 0:
+    if node_map.obs_size >= 0:
         if val == 0 or val == 1 or val == -5:
             if val == 1:
                 flag, robot_x, robot_y = find_out_from_obs(robot_x, robot_y)

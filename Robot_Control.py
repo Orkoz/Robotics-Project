@@ -12,22 +12,22 @@ from alg import min_x,max_x,min_y,max_y
 
 
 # Variables
-Closeness0 = 40.0  # [cm]
-Closeness45 = 40.0  # [cm]
-Edge_Closeness = 40.0  # [cm]
+Closeness0 = 30.0  # [cm]
+Closeness45 = 30.0  # [cm]
+Edge_Closeness = 30.0  # [cm]
 Kp = 3.0  # speed proportional gain
 initial_yaw_delta = 10.0  # [deg]
 go_around_obstacle_delta_yaw = 45  # [deg]
 movement_delta_yaw = 1  # [deg]
 movement_delta_x_y = 1  # [deg]
 critical_yaw = 30  # [deg]
-final_position_delta = 5.0  # [cm]
-drive_directly_to_target_d = 5  # [factor]
-sweeping_angle = 350.0  # [cm]
-coursing_velocity = 300.0  # [wheel power]
+final_position_delta = 10.0  # [cm]
+drive_directly_to_target_d = 2  # [factor]
+sweeping_angle = 310.0  # [cm]
+coursing_velocity = 270.0  # [wheel power]
 drive_directly_to_target_velocity = 230.0  # [wheel power]
-stop_velocity = -1000  # [wheel power]
-sleep_time = 0.5  # [sec]
+stop_velocity = -300  # [wheel power]
+sleep_time = 0.2  # [sec]
 pass_obstacle_timeout = 1000  # [sec]
 to_close_to_edge_flag = False
 
@@ -53,13 +53,13 @@ class Robot(object):
         self.YAW = []
         # self.V = []
         self.T = [0]
-        self.csv_file = np.array([self.x, self.y, self.Dx, self.Dy, self.yaw, self.v, self.dt])
+        self.csv_file = np.array([self.x, self.y, self.Dx, self.Dy, self.yaw, self.dt])
         self.e = threading.Event()
         self.update_params_thread = threading.Thread(target=self.update_params)
         self.update_params_thread.start()
         self.start_motion_sweeping_angle = 0  # [cm]
         self.start_motion_coursing_velocity = 0  # [wheel power]
-        self.to_close_to_edge_flag = are_we_too_close_to_edge()
+        self.to_close_to_edge_flag = self.are_we_too_close_to_edge()
 
     def update_params(self):
         while 1:
@@ -76,7 +76,7 @@ class Robot(object):
                 self.YAW.append(self.yaw)
                 # self.V.append(self.v)
                 self.T.append(self.T[-1] + self.dt)
-                self.csv_file = np.vstack((self.csv_file, np.array([self.x, self.y, self.Dx, self.Dy, self.yaw, self.v, self.dt])))
+                self.csv_file = np.vstack((self.csv_file, np.array([self.x, self.y, self.Dx, self.Dy, self.yaw, self.dt])))
             self.e.set()
 
     def drive(self, delta_yaw, v):
@@ -86,13 +86,27 @@ class Robot(object):
 
         left, right = convert_angle_and_velocity_to_wheels_commends(delta_yaw, v)
         self.state.drive(int(left), int(right))
+        sleep(sleep_time)
         self.e.clear()
         self.e.wait()
 
-        if v == 0 and abs(round(robot.yaw) - prev_yaw) < movement_delta_yaw:
-            robot.start_rotational_motion(delta_yaw, prev_yaw)
-        if delta_yaw == 0 and abs(round(robot.x) - prev_x) < movement_delta_x_y and abs(round(robot.y) - prev_y) < movement_delta_x_y:
-            robot.start_linear_motion(v, prev_x, prev_y)
+        # if v == 0 and abs(round(robot.yaw) - prev_yaw) < movement_delta_yaw:
+        #     robot.start_rotational_motion(delta_yaw, prev_yaw)
+        # if delta_yaw == 0 and abs(round(robot.x) - prev_x) < movement_delta_x_y and abs(round(robot.y) - prev_y) < movement_delta_x_y:
+        #     robot.start_linear_motion(v, prev_x, prev_y)
+        if abs(round(robot.yaw) - prev_yaw) < movement_delta_yaw and abs(round(robot.x) - prev_x) < movement_delta_x_y and abs(round(robot.y) - prev_y) < movement_delta_x_y:
+            robot.start_motion(delta_yaw, prev_yaw, v, prev_x, prev_y)
+
+    def start_motion(self, delta_yaw, prev_yaw, v, prev_x, prev_y):
+        while abs(round(robot.yaw) - prev_yaw) < movement_delta_yaw and abs(round(robot.x) - prev_x) < movement_delta_x_y and abs(round(robot.y) - prev_y) < movement_delta_x_y:
+            self.start_motion_sweeping_angle = min(self.start_motion_sweeping_angle + 1, 50)
+            self.start_motion_sweeping_angle = min(self.start_motion_sweeping_angle + 1, 50)
+            left, right = convert_angle_and_velocity_to_wheels_commends(delta_yaw + self.start_motion_sweeping_angle, v + self.start_motion_coursing_velocity)
+            self.state.drive(int(left), int(right))
+            self.e.clear()
+            self.e.wait()
+        self.start_motion_sweeping_angle = 0
+        self.start_motion_coursing_velocity = 0
 
     def start_rotational_motion(self, delta_yaw, prev_yaw):
         while abs(round(robot.yaw) - prev_yaw) < movement_delta_yaw:
@@ -102,7 +116,7 @@ class Robot(object):
             self.state.drive(int(left), int(right))
             self.e.clear()
             self.e.wait()
-        self.start_motion_sweeping_angle = self.start_motion_sweeping_angle - 1
+        self.start_motion_sweeping_angle = 0
 
     def start_linear_motion(self, v, prev_x, prev_y):
         while abs(round(robot.x) - prev_x) < movement_delta_x_y and abs(round(robot.y) - prev_y) < movement_delta_x_y:
@@ -112,7 +126,7 @@ class Robot(object):
             self.state.drive(int(left), int(right))
             self.e.clear()
             self.e.wait()
-        self.start_motion_coursing_velocity = self.start_motion_coursing_velocity - 1
+        self.start_motion_coursing_velocity = 0
 
     def plot_actual_motion(self):
         plt.plot(self.X, self.Y, label="course")
@@ -133,6 +147,25 @@ class Robot(object):
 
         np.savetxt("actual motion/robot -" + str(time()) + ".csv", self.csv_file, delimiter=",")
 
+    def are_we_too_close_to_edge(self):
+        dis_to_min_edge_x = abs(self.x - min_x)
+        dis_to__min_edge_y = abs(self.y - min_y)
+        dis_to_max_edge_x =  abs(self.x - max_x)
+        dis_to__max_edge_y = abs(self.y - max_y)
+
+        a = Edge_Closeness*self.Dx
+        b = Edge_Closeness*self.Dy
+
+        if self.Dx < 0 and dis_to_min_edge_x <= abs(Edge_Closeness*self.Dx):
+            return 1
+        if self.Dx >= 0 and dis_to_max_edge_x <= Edge_Closeness*self.Dx:
+            return 1
+        if self.Dy < 0 and dis_to__min_edge_y <= abs(Edge_Closeness*self.Dy):
+            return 1
+        if self.Dy >= 0 and dis_to__max_edge_y <= Edge_Closeness*self.Dy:
+            return 1
+
+        return 0
 
 class MotionProfile(object):
     def __init__(self):
@@ -155,7 +188,7 @@ def convert_angle_and_velocity_to_wheels_commends(delta_yaw, v):
     left = v + delta_yaw
     right = v - delta_yaw
 
-    if np.abs(left) > 1000:  # TODO add condition on 0
+    if np.abs(left) > 1000:
         left = np.sign(left)*1000
     if np.abs(right) > 1000:
         right = np.sign(right)*1000
@@ -265,9 +298,13 @@ def drive_directly_to_target():
 def check_position(new_obstacle_mode):
     if are_we_too_close_to_edge():
         if not robot.to_close_to_edge_flag:
+            print('we are too close to edge!')
             robot.drive(0, stop_velocity)
             robot.to_close_to_edge_flag = True
+        if new_obstacle_mode:
+            return 0
     else:
+        # print('we are no longer close to edge!')
         robot.to_close_to_edge_flag = False
 
     at0, at45L, at45R = facing_new_obstacle()
@@ -275,7 +312,7 @@ def check_position(new_obstacle_mode):
     if are_we_too_close_to_obstacle() and (at45L == 1 or at45L == 1 or at45R == 1):
         robot.drive(0, stop_velocity)
         robot.drive(0, -500)
-        print('we are too close!')
+        print('we are too close to obstacle!')
         return 0
 
     # handling new obstacle.
@@ -359,15 +396,15 @@ def check_obstacle(robot_x, robot_y, robot_angle, obs_dis, obs_angle):
 def pass_obstacle():
     position_the_robot_at_90_degree_to_obstacle()
     drive_parallel_to_obstacle()
-    go_around()
-    # robot.drive(sweeping_angle, 0)
+    robot.drive(0, coursing_velocity)
+    robot.drive(0, coursing_velocity)
 
 
 def position_the_robot_at_90_degree_to_obstacle():
     while robot.Obs0 != -1:
         robot.drive(sweeping_angle, 0)
         facing_new_obstacle()
-        sleep(sleep_time*2)
+        # sleep(sleep_time*2)
 
 
 def drive_parallel_to_obstacle():
@@ -387,80 +424,12 @@ def go_around():
         while robot.Obs45L == -1:
             robot.drive(-1*sweeping_angle, 0)
             facing_new_obstacle()
-            sleep(sleep_time * 2)
+            # sleep(sleep_time * 2)
         robot.drive(sweeping_angle, 0)
 
 
 def initialize_motion(x, y, yaw_mat):
     profile.update_profile(x, y, yaw_mat)
-
-
-def map_robot_wheels_commends_to_yaw():
-    yaw_map = np.array([0, 0, 0, 0, 0])
-    for i in range(300, 700, 10):
-        for j in range(-300, -700, -10):
-            robot.state.drive(int(i), int(j))
-            sleep(1)
-            robot.update_params()
-            print(i, j, robot.Dx, robot.Dy, robot.yaw)
-            yaw_map = np.vstack((yaw_map, np.array([i, j, robot.Dx, robot.Dy, robot.yaw])))
-    return yaw_map
-
-
-def map_robot_wheels_commends_to_speed():
-    yaw_map = np.array([0, 0, 0, 0, 0])
-    for i in range(200, 500, 5):
-            robot.state.drive(int(i), int(i))
-            sleep(1)
-            robot.update_params()
-            yaw_map = np.vstack((yaw_map, np.array([i, i, robot.Dx, robot.Dy, robot.yaw])))
-    return yaw_map
-
-
-def brakes_test():
-    const = -1000
-    stop = 300 * np.sign(const) * -1
-
-    robot.drive(0, const)
-    print(robot.Obs0, robot.Obs45L, robot.Obs45R, robot.v)
-    if not check_position(0):
-        print("stop!")
-        return
-    robot.drive(0, const)
-    print(robot.Obs0, robot.Obs45L, robot.Obs45R, robot.v)
-    if not check_position(0):
-        print("stop!")
-        return
-    robot.drive(0, const)
-    print(robot.Obs0, robot.Obs45L, robot.Obs45R, robot.v)
-    if not check_position(0):
-        print("stop!")
-        return
-    robot.drive(0, const)
-    print(robot.Obs0, robot.Obs45L, robot.Obs45R, robot.v)
-    if not check_position(0):
-        print("stop!")
-        return
-    robot.drive(0, const)
-    print(robot.Obs0, robot.Obs45L, robot.Obs45R, robot.v)
-    if not check_position(0):
-        print("stop!")
-        return
-    robot.drive(0, const)
-    print(robot.Obs0, robot.Obs45L, robot.Obs45R, robot.v)
-    if not check_position(0):
-        print("stop!")
-        return
-    robot.drive(0, stop)
-    print(robot.Obs0, robot.Obs45L, robot.Obs45R, robot.v)
-
-    # robot.drive(0, const)
-    # robot.drive(0, const)
-    # robot.drive(0, const)
-    # robot.drive(0, const)
-    # robot.drive(0, const)
-    # robot.drive(0, const)
-    # robot.drive(0, stop)
 
 
 def main():
